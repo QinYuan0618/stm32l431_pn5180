@@ -87,11 +87,10 @@ phStatus_t phOsal_EventPend(volatile phOsal_Event_t * eventHandle, phOsal_EventO
     phStatus_t status;
 
     printf("EventPend START\r\n");
-    printf("WAIT: 0x%08X\r\n", FlagsToWait);  // 看等待什么标志
+    printf("WAIT: 0x%08lX\r\n", FlagsToWait);  // 看等待什么标志
 
     if((eventHandle == NULL) || ((*eventHandle) == NULL))
     {
-//        printf("EventPend ERROR\r\n");
         return PH_OSAL_ADD_COMPCODE(PH_OSAL_ERROR, PH_COMP_OSAL);
     }
 
@@ -100,28 +99,20 @@ phStatus_t phOsal_EventPend(volatile phOsal_Event_t * eventHandle, phOsal_EventO
     /* Check whether infinite wait, if not config timer. */
     if (ticksToWait != PHOSAL_MAX_DELAY)
     {
-//        printf("Timer START\r\n");
         phOsal_StartTickTimer(ticksToWait);
-//        printf("Timer OK\r\n");
     }
-
-//    printf("Loop START\r\n");
 
     while(1)
     {
         /* Enter Critical Section */
-//        printf("CS Enter\r\n");
         phOsal_EnterCriticalSection();
-//        printf("CS OK\r\n");
 
         if ((((options & E_OS_EVENT_OPT_PEND_SET_ALL) && (((*((uint32_t *)(*eventHandle))) & FlagsToWait) == FlagsToWait))
             || ((!(options & E_OS_EVENT_OPT_PEND_SET_ALL)) && ((*((uint32_t *)(*eventHandle))) & FlagsToWait)))
             || (gbWaitTimedOut))
         {
-//            printf("CS Exit\r\n");
             /* Exit Critical Section. */
             phOsal_ExitCriticalSection();
-//            printf("Event OK\r\n");
             if (gbWaitTimedOut != 0x01)
             {
                 status = PH_OSAL_SUCCESS;
@@ -129,31 +120,21 @@ phStatus_t phOsal_EventPend(volatile phOsal_Event_t * eventHandle, phOsal_EventO
             break;
         }
 
-//        printf("CS Exit2\r\n");
         /* Exit Critical Section. */
         phOsal_ExitCriticalSection();
-//        printf("Sleep\r\n");
 
         /* Wait for interrupts/events to occur */
         phOsal_Sleep();
-//        printf("Wake\r\n");
     }
-
-//    printf("Loop END\r\n");
 
     /* Check whether infinite wait, if not config timer. */
     if (ticksToWait != PHOSAL_MAX_DELAY)
     {
-//        printf("Timer STOP\r\n");
         phOsal_StopTickTimer();
-//        printf("Timer STOPPED\r\n");
     }
-
     gbWaitTimedOut = 0;
 
-//    printf("Final CS\r\n");
     phOsal_EnterCriticalSection();
-
     if (pCurrFlags != NULL)
     {
         *pCurrFlags = (*((uint32_t *)(*eventHandle)));
@@ -163,17 +144,17 @@ phStatus_t phOsal_EventPend(volatile phOsal_Event_t * eventHandle, phOsal_EventO
     {
         (*((uint32_t *)(*eventHandle))) &= (~(FlagsToWait & (*((uint32_t *)(*eventHandle)))));
     }
-
     phOsal_ExitCriticalSection();
-//    printf("EventPend END\r\n");
 
     return PH_OSAL_ADD_COMPCODE(status, PH_COMP_OSAL);
+
+
 }
 
 phStatus_t phOsal_EventPost(phOsal_Event_t * eventHandle, phOsal_EventOpt_t options, phOsal_EventBits_t FlagsToPost,
     phOsal_EventBits_t *pCurrFlags)
 {
-	printf("POST: 0x%08X\r\n", FlagsToPost);  // 添加这行
+	printf("POST: 0x%08lX\r\n", FlagsToPost);  // 添加这行
 
     if((eventHandle == NULL) || ((*eventHandle) == NULL))
     {

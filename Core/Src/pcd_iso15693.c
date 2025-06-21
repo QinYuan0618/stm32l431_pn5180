@@ -99,6 +99,8 @@ void NfcrdlibEx5_ISO15693(void *pParams);
 static phStatus_t phExample_Init(void);
 static phStatus_t DisplayCardTypeInfo(uint8_t *pUID, uint8_t *pNTag5_State);
 static void ReadMultipleBlock_HighDataRate(uint8_t bNTag5_State);
+// 自定义轮询函数
+phStatus_t phhalHw_Pn5180_PollAndProcessIRQ(phhalHw_Pn5180_DataParams_t * pDataParams);
 
 const uint8_t bTaskName[] = {"Ex5_ISO15693"};
 
@@ -201,9 +203,21 @@ void NfcrdlibEx5_ISO15693(void *pParams)
             status = phhalHw_FieldOff(pHal);
             CHECK_STATUS(status);
 
-            /* !program stock at here! */
+			#ifdef USE_POLLING_MODE
+			// 轮询模式下的等待
+			uint32_t dwStartTime = HAL_GetTick();
+			while ((HAL_GetTick() - dwStartTime) < 5100)
+			{
+				// 主动检查和处理IRQ
+				phhalHw_Pn5180_PollAndProcessIRQ(pHal);
+				HAL_Delay(1);
+			}
+			#else
+			// 原有的等待方式
+            /* !program stock at here! but we replace irq to discoeryLoop */
             status = phhalHw_Wait(pDiscLoop->pHalDataParams,PHHAL_HW_TIME_MICROSECONDS, 5100); // 设置超时时间5.1s
             CHECK_STATUS(status);
+			#endif
 
             /* Configure Discovery loop for Poll Mode */
             status = phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_NEXT_POLL_STATE, PHAC_DISCLOOP_POLL_STATE_DETECTION);
@@ -573,3 +587,30 @@ uint8_t  poll_res[18]    = {0x01, 0xFE, 0xB2, 0xB3, 0xB4, 0xB5,
                                    0xB6, 0xB7, 0xC0, 0xC1, 0xC2, 0xC3,
                                    0xC4, 0xC5, 0xC6, 0xC7, 0x23, 0x45 };
 #endif /* NXPBUILD__PHHAL_HW_TARGET */
+
+
+// 创建一个轮询函数来替代中断处理
+phStatus_t phhalHw_Pn5180_PollAndProcessIRQ(phhalHw_Pn5180_DataParams_t * pDataParams)
+{
+    uint32_t dwIrqStatus;
+    phStatus_t status;
+
+    // 读取IRQ状态
+    status = phhalHw_Pn5180_ReadRegister(pDataParams, IRQ_STATUS, &dwIrqStatus);
+    if (status != PH_ERR_SUCCESS) return status;
+
+    // 如果有中断标志
+    if (dwIrqStatus != 0)
+    {
+        // 处理中断（原本在中断回调中的逻辑）
+        if (pDataParams->pRFISRCallback != NULL)
+        {
+            pDataParams->pRFISRCallback(pDataParams);
+        }
+
+        // 清除已处理的中断标志
+        phhalHw_Pn5180_WriteRegister(pDataParams, IRQ_SET_CLEAR, dwIrqStatus);
+    }
+
+    return PH_ERR_SUCCESS;
+}

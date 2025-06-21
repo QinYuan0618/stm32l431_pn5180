@@ -57,8 +57,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define PN5180_DWL_Pin GPIO_PIN_3
-#define PN5180_DWL_GPIO_Port GPIOC
 #define PN5180_BUSY_Pin GPIO_PIN_1
 #define PN5180_BUSY_GPIO_Port GPIOA
 #define Beep_Pin GPIO_PIN_11
@@ -71,6 +69,8 @@ void Error_Handler(void);
 #define PN5180_MISO_GPIO_Port GPIOC
 #define PN5180_MOSI_Pin GPIO_PIN_12
 #define PN5180_MOSI_GPIO_Port GPIOC
+#define PN5180_IRQ_Pin GPIO_PIN_4
+#define PN5180_IRQ_GPIO_Port GPIOB
 #define PN5180_RST_Pin GPIO_PIN_5
 #define PN5180_RST_GPIO_Port GPIOB
 

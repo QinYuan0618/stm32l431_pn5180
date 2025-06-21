@@ -81,10 +81,8 @@ phStatus_t phhalHw_Pn5180_WaitIrq(
         /*wait for IRQ pin event or Abort event*/
 
         {
-    		printf("Before phOsal_EventPend\n"); //debug
             statusTmp = phOsal_EventPend((volatile phOsal_Event_t * )(&pDataParams->HwEventObj.EventHandle), E_OS_EVENT_OPT_PEND_SET_ANY, PHOSAL_MAX_DELAY,
                 (E_PH_OSAL_EVT_RF | E_PH_OSAL_EVT_ABORT), &tReceivedEvents);
-            printf("After phOsal_EventPend, status=0x%04X\n", statusTmp); //debug
         }
 
         /*Handle abort event*/

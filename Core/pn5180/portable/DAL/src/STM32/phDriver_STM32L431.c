@@ -70,19 +70,6 @@ phStatus_t phDriver_PinConfig(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, phDriver_P
 /* GPIO FUNC_2：读GPIO引脚状态是高or低电平 */
 uint8_t phDriver_PinRead(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, phDriver_Pin_Func_t ePinFunc)
 {
-	if(GPIO_Pin == PN5180_IRQ_Pin)
-	{
-		if(ePinFunc == PH_DRIVER_PINFUNC_INTERRUPT)
-		{
-			// 中断模式：检查是否有pending的中断
-			if(g_irq_pending)
-			{
-				g_irq_pending = 0;  // 读取后清除
-				return 1;  // 有中断
-			}
-			return 0;  // 无中断
-		}
-	}
     return HAL_GPIO_ReadPin(GPIOx, GPIO_Pin);
 }
 

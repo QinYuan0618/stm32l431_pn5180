@@ -193,21 +193,6 @@ void proc_uart1_recv(void)
 	}
 }
 
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-
-    printf("IRQ triggered!\r\n"); // debug
-
-    if (phDriver_PinRead(PHDRIVER_PIN_IRQ, PH_DRIVER_PINFUNC_INTERRUPT))
-    {
-        /* Call application registered callback. */
-        if (pHal->pRFISRCallback != NULL)
-        {
-            pHal->pRFISRCallback(pHal);
-        }
-    }
-}
 /* USER CODE END 4 */
 
 /**

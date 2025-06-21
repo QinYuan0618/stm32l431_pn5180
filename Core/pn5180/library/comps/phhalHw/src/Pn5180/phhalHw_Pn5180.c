@@ -346,7 +346,7 @@ phStatus_t phhalHw_Pn5180_Init(
     /* Set Dwl Pin as output, pullup enable and set to low. */
     pinCfg.bPullSelect = PHDRIVER_PIN_IRQ_PULL_CFG;
     pinCfg.bOutputLogic = PH_DRIVER_SET_LOW;
-    PH_CHECK_SUCCESS_FCT(statusTmp, phDriver_PinConfig(PHDRIVER_PIN_DWL, PH_DRIVER_PINFUNC_OUTPUT, &pinCfg));
+//    PH_CHECK_SUCCESS_FCT(statusTmp, phDriver_PinConfig(PHDRIVER_PIN_DWL, PH_DRIVER_PINFUNC_OUTPUT, &pinCfg));
 
     if (((phbalReg_Type_t *)pBalDataParams)->bBalType != PHBAL_REG_TYPE_KERNEL_SPI)
     {
@@ -1000,6 +1000,41 @@ phStatus_t phhalHw_Pn5180_Wait(
     uint16_t wTimeout		// 等待超时时间
     )
 {
+	#ifdef USE_POLLING_MODE
+    // 轮询模式：主动检查IRQ_STATUS寄存器
+    uint32_t dwStartTime = HAL_GetTick();
+    uint32_t dwTimeout = wTimeout;
+
+    if (bUnit == PHHAL_HW_TIME_MICROSECONDS) {
+        dwTimeout = (wTimeout + 999) / 1000; // 转换为毫秒
+    }
+
+    while ((HAL_GetTick() - dwStartTime) < dwTimeout)
+    {
+        // 读取IRQ_STATUS寄存器
+        uint32_t dwIrqStatus;
+        phStatus_t status;
+
+        // 读取IRQ_STATUS寄存器
+        status = phhalHw_Pn5180_ReadRegister(pDataParams, IRQ_STATUS, &dwIrqStatus);
+        if (status != PH_ERR_SUCCESS)
+        {
+    	    return status;
+        }
+
+        // 使用正确的宏定义检查中断标志
+        if (dwIrqStatus & (IRQ_STATUS_RX_IRQ_MASK | IRQ_STATUS_IDLE_IRQ_MASK | IRQ_STATUS_TX_IRQ_MASK))
+        {
+            // 清除检测到的中断标志
+            phhalHw_Pn5180_WriteRegister(pDataParams, IRQ_SET_CLEAR, dwIrqStatus);
+            return PH_ERR_SUCCESS;
+        }
+
+        HAL_Delay(1); // 短暂延时
+    }
+
+    return PH_ERR_IO_TIMEOUT;
+#else
     phStatus_t  PH_MEMLOC_REM  statusTmp;
     uint32_t    PH_MEMLOC_REM dwLoadValue;	// 定时器加载值
     uint32_t    PH_MEMLOC_REM wPrescaler;	// 预分频值
@@ -1017,13 +1052,6 @@ phStatus_t phhalHw_Pn5180_Wait(
         return PH_ERR_SUCCESS;
     }
 
-    printf("\n -----debug 0-----\n");
-// -----------program stock at below areas----------------
-/*
- * 	SPITX>> 00 03 00 08 00 00
-	SPITX>> 00 01 00 08 00 00
-	SPITX>> 03 0E 01 00 00 00 00 0B 01 24 0E 01 00 0E 01 41 00 00 00
-*/
     /* Setting the Prescaler frequency according to wTimeout */
     if (bUnit == PHHAL_HW_TIME_MILLISECONDS)
     {
@@ -1039,11 +1067,9 @@ phStatus_t phhalHw_Pn5180_Wait(
             /* 执行内部等待函数 */
             PH_CHECK_SUCCESS_FCT(statusTmp,phhalHw_Pn5180_Int_Wait( pDataParams, dwLoadValue,  wPrescaler));
         }
-// -----------program stock at top areas----------------
-        printf("\n -----debug 1-----\n");
+
         dwLoadValue =(uint32_t) (  wTimeout * ( wFreq  / PHHAL_HW_PN5180_CONVERSION_MS_SEC) );
         PH_CHECK_SUCCESS_FCT(statusTmp,phhalHw_Pn5180_Int_Wait( pDataParams, dwLoadValue,  wPrescaler));
-        printf("\n -----debug 2-----\n");
     }
     else
     {
@@ -1055,10 +1081,10 @@ phStatus_t phhalHw_Pn5180_Wait(
         /*Restoring the division done in the earlier step*/
         dwLoadValue =(uint32_t) ((wTimeout * dwLoadValue)/100);
         PH_CHECK_SUCCESS_FCT(statusTmp,phhalHw_Pn5180_Int_Wait( pDataParams, dwLoadValue,  wPrescaler));
-        printf("\n -----debug 3-----\n");
     }
 
     return PH_ERR_SUCCESS;
+#endif
 }
 
 phStatus_t phhalHw_Pn5180_FieldReset(
