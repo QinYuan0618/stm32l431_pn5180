@@ -1,0 +1,5 @@
+../Core/Src/pcd_iso15693.c:111:5:iso15693_test	32	static
+../Core/Src/pcd_iso15693.c:171:6:NfcrdlibEx5_ISO15693	72	static
+../Core/Src/pcd_iso15693.c:338:19:phExample_Init	16	static
+../Core/Src/pcd_iso15693.c:373:19:DisplayCardTypeInfo	24	static
+../Core/Src/pcd_iso15693.c:496:13:ReadMultipleBlock_HighDataRate	16	static

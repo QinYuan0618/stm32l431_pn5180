@@ -1,0 +1,108 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright 2022, 2024 NXP                                                   */
+/*                                                                            */
+/* NXP Confidential. This software is owned or controlled by NXP and may only */
+/* be used strictly in accordance with the applicable license terms.          */
+/* By expressly accepting such terms or by downloading, installing,           */
+/* activating and/or otherwise using the software, you are agreeing that you  */
+/* have read, and that you agree to comply with and are bound by, such        */
+/* license terms. If you do not agree to be bound by the applicable license   */
+/* terms, then you may not retain, install, activate or otherwise use the     */
+/* software.                                                                  */
+/*----------------------------------------------------------------------------*/
+
+/** \file
+* mBedTLS specific Random Number Component of the Reader Library Framework.
+* $Author: NXP $
+* $Revision: $ (v07.13.00)
+* $Date: $
+*
+*/
+
+#ifndef PHCRYPTORNG_MBEDTLS_H
+#define PHCRYPTORNG_MBEDTLS_H
+
+#include <ph_Status.h>
+
+#ifdef NXPBUILD__PH_CRYPTORNG_MBEDTLS
+#include <phCryptoRng.h>
+
+#include <mbedtls_config_sw.h>
+
+#ifdef MBEDTLS_CTR_DRBG_C
+#include <setjmp.h>
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
+#else
+#endif /* MBEDTLS_CTR_DRBG_C */
+
+#ifdef MBEDTLS_ERROR_C
+#include "mbedtls/error.h"
+#endif /* MBEDTLS_ERROR_C */
+
+#ifdef MBEDTLS_CTR_DRBG_C
+#define TRY                                                                         \
+    do                                                                              \
+    {                                                                               \
+        jmp_buf ex_buf__;                                                           \
+        switch( setjmp(ex_buf__) )                                                  \
+        {                                                                           \
+            case 0:                                                                 \
+                while (1)                                                           \
+                {
+
+#define CATCH(x)                                                                    \
+                break;                                                              \
+            case x:
+
+#define FINALLY                                                                     \
+                break;                                                              \
+                }                                                                   \
+            default:
+
+#define END                                                                         \
+        }                                                                           \
+    } while(0);
+
+#define END_EXT                                                                     \
+                break;                                                              \
+                }                                                                   \
+            default:                                                                \
+                break;                                                              \
+        }                                                                           \
+    } while(0);
+
+#define THROW(x) longjmp(ex_buf__, x)
+
+#define EXCEPTION           (1)
+#define RDLIB_EXCEPTION     (2)
+#define MBEDTLS_EXCEPTION   (3)
+
+#define PH_CHECK_SUCCESS_FCT_EXT(Status, Fct)                                       \
+    {                                                                               \
+        (Status) = (Fct);                                                           \
+        if (Status != 0)                                                            \
+        {                                                                           \
+            THROW(RDLIB_EXCEPTION);                                                 \
+        }                                                                           \
+    }
+
+#define PH_CRYPTOSYM_CHECK_STATUS(DataParams, Status)                               \
+    {                                                                               \
+        if (Status != 0)                                                            \
+        {                                                                           \
+            DataParams->dwErrorCode = Status;                                       \
+            THROW(MBEDTLS_EXCEPTION);                                               \
+        }                                                                           \
+    }
+#endif /* MBEDTLS_CTR_DRBG_C */
+
+phStatus_t phCryptoRng_mBedTLS_Seed(phCryptoRng_mBedTLS_DataParams_t * pDataParams, uint8_t * pSeed, uint8_t bSeedLen);
+
+phStatus_t phCryptoRng_mBedTLS_Rnd(phCryptoRng_mBedTLS_DataParams_t * pDataParams, uint16_t  wNoOfRndBytes, uint8_t * pRnd);
+
+phStatus_t phCryptoRng_mBedTLS_GetLastStatus(phCryptoRng_mBedTLS_DataParams_t * pDataParams, uint16_t wStatusMsgLen, int8_t * pStatusMsg,
+    int32_t * pStatusCode);
+#endif /* NXPBUILD__PH_CRYPTORNG_MBEDTLS */
+
+#endif /* PHCRYPTORNG_MBEDTLS_H */
