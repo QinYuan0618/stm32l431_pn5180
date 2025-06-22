@@ -125,7 +125,9 @@ void phOsal_ExitCriticalSection(void)
 
 void phOsal_Sleep(void)
 {
-    __WFE();
+    // 不使用 __WFE()，改为短暂延时
+    // __WFE();
+    for(volatile int i = 0; i < 1000; i++);
 }
 
 void phOsal_WakeUp(void)

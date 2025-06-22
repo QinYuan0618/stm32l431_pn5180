@@ -37,7 +37,7 @@
 #endif
 /* PN5180 控制引脚 - 已在main.h中定义 */
 #define PHDRIVER_PIN_RESET			PN5180_RST_GPIO_Port, PN5180_RST_Pin     /**< Reset pin, Port B, pin13. */
-#define PHDRIVER_PIN_IRQ           	PN5180_IRQ_GPIO_Port, PN5180_IRQ_Pin     /**< Interrupt pin from Frontend to Host*/
+//#define PHDRIVER_PIN_IRQ           	PN5180_IRQ_GPIO_Port, PN5180_IRQ_Pin     /**< Interrupt pin from Frontend to Host*/
 #define PHDRIVER_PIN_BUSY          	PN5180_BUSY_GPIO_Port, PN5180_BUSY_Pin     /**< Frontend's Busy Status*/
 //#define PHDRIVER_PIN_DWL          	PN5180_DWL_GPIO_Port, PN5180_DWL_Pin   /**< Download mode pin of Frontend*/
 #define PHDRIVER_PIN_SSEL         	PN5180_NSS_GPIO_Port, PN5180_NSS_Pin

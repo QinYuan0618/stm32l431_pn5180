@@ -47,7 +47,6 @@
 /* Local headers */
 #include <NfcrdlibEx1_DiscoveryLoop.h>
 #include <NfcrdlibEx1_EmvcoProfile.h>
-#include "BoardSelection.h"
 
 /*******************************************************************************
 **   Definitions
@@ -104,7 +103,7 @@ static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile);
 **   Code
 *******************************************************************************/
 
-int BasicDiscoveryLoop(void)
+int main(void)
 {
     do
     {
@@ -186,12 +185,12 @@ void DiscoveryLoop_Demo(void  *pDataParams)
 {
     phStatus_t    status, statustmp;
     uint16_t      wEntryPoint;
-//    phacDiscLoop_Profile_t bProfile = PHAC_DISCLOOP_PROFILE_UNKNOWN;
-	phacDiscLoop_Profile_t bProfile = PHAC_DISCLOOP_PROFILE_NFC;
+    phacDiscLoop_Profile_t bProfile = PHAC_DISCLOOP_PROFILE_UNKNOWN;
+
     /* This call shall allocate secure context before calling any secure function,
      * when FreeRtos trust zone is enabled.
      * */
-//    phOsal_ThreadSecureStack( 512 );
+    phOsal_ThreadSecureStack( 512 );
 
 #ifdef ENABLE_DISC_CONFIG
 

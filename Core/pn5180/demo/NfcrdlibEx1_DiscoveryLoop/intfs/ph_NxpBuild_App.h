@@ -37,7 +37,7 @@
 /* DEBUG build mode */
 /*#define NXPBUILD__PH_DEBUG*/                              /**< DEBUG build definition */
 
-#define NXPRDLIB_REM_GEN_INTFS
+//#define NXPRDLIB_REM_GEN_INTFS
 /*********************************************************************************************************************************************************************************/
 
 #if defined(__PN74XXXX__) || defined (__PN73XXXX__)
@@ -77,32 +77,33 @@
     defined(NXPBUILD__PHHAL_HW_PN5190) || \
     defined(NXPBUILD__PHHAL_HW_PN76XX) || \
     defined(NXPBUILD__PHHAL_HW_PN7462AU)
-//    #define NXPBUILD__PHHAL_HW_TARGET                     /**< Dependency checking if target mode macros should be enabled */
+    #define NXPBUILD__PHHAL_HW_TARGET                       /**< Dependency checking if target mode macros should be enabled */
 #endif
 
 /*********************************************************************************************************************************************************************************/
 
-//#define NXPBUILD__PHPAL_I14443P3A_SW                      /**< PAL ISO 14443-3A SW Component is included. */
+#define NXPBUILD__PHPAL_I14443P3A_SW                        /**< PAL ISO 14443-3A SW Component is included. */
 
-//#define NXPBUILD__PHPAL_I14443P3B_SW                      /**< PAL ISO 14443-3B SW Component is included. */
+#define NXPBUILD__PHPAL_I14443P3B_SW                        /**< PAL ISO 14443-3B SW Component is included. */
 
-//#define NXPBUILD__PHPAL_I14443P4A_SW                      /**< PAL ISO 14443-4A SW Component is included. */
+#define NXPBUILD__PHPAL_I14443P4A_SW                        /**< PAL ISO 14443-4A SW Component is included. */
 
-//#define NXPBUILD__PHPAL_I14443P4_SW                       /**< PAL ISO 14443-4 SW Component is included. */
+#define NXPBUILD__PHPAL_I14443P4_SW                         /**< PAL ISO 14443-4 SW Component is included. */
 
-//#define NXPBUILD__PHPAL_MIFARE_SW                     /**< PAL MIFARE SW Component is included */
-//#define NXPBUILD__PHPAL_MIFARE_STUB                   /**< PAL MIFARE STUB Component is included */
+#define NXPBUILD__PHPAL_MIFARE_SW                           /**< PAL MIFARE SW Component is included */
+//#define NXPBUILD__PHPAL_MIFARE_STUB                       /**< PAL MIFARE STUB Component is included */
 
-//#define NXPBUILD__PHPAL_FELICA_SW                         /**< PAL Felica SW Component is included. */
+#define NXPBUILD__PHPAL_FELICA_SW                           /**< PAL Felica SW Component is included. */
 
 #define NXPBUILD__PHPAL_SLI15693_SW                         /**< PAL SLI 15693 Component is included. */
-//#define NXPBUILD__PHPAL_I18000P3M3_SW                     /**< PAL ISO 18000p3m3 Component is included. */
+
+    #define NXPBUILD__PHPAL_I18000P3M3_SW                   /**< PAL ISO 18000p3m3 Component is included. */
 
 #ifdef NXPBUILD__PHHAL_HW_RC663                             /**< If FE HAL is RC663, then include EPC UID PAL as required, otherwise exclude. */
-//  #define NXPBUILD__PHPAL_EPCUID_SW                       /**< PAL EPC UID SW Component is included. */
+    #define NXPBUILD__PHPAL_EPCUID_SW                       /**< PAL EPC UID SW Component is included. */
 #endif
 
-//#define NXPBUILD__PHPAL_I18092MPI_SW                      /**< PAL ISO18092 (P2P) SW Component is included. */
+#define NXPBUILD__PHPAL_I18092MPI_SW                        /**< PAL ISO18092 (P2P) SW Component is included. */
 
 #ifndef NXPBUILD__PHHAL_HW_RC663                            /**< If FE HAL is RC663, then exclude ISO14443 Card Mode PAL & ISO18092 Target Mode PAL, otherwise include as required. */
 //      #define NXPBUILD__PHPAL_I14443P4MC_SW               /**< PAL ISO 14443-4 Card Mode SW Component is included. */
@@ -120,7 +121,7 @@
         defined (NXPBUILD__PHHAL_HW_RC663) || \
         defined (NXPBUILD__PHHAL_HW_PN7462AU) || \
         defined (NXPBUILD__PHHAL_HW_PN7642)
-//              #define NXPBUILD__PHAC_DISCLOOP_LPCD       /**< SRC to enable LPCD is included. */
+            #define NXPBUILD__PHAC_DISCLOOP_LPCD       /**< SRC to enable LPCD is included. */
     #endif
 
     #ifdef  NXPBUILD__PHPAL_I14443P3A_SW
@@ -169,11 +170,13 @@
     #ifndef NXPBUILD__PHHAL_HW_RC663                               /**< If FE HAL is RC663, target mode is not supported at all, hence exclude those SRC, otherwise include as required */
         #ifdef NXPBUILD__PHHAL_HW_TARGET
             #define NXPBUILD__PHAC_DISCLOOP_TYPEA_TARGET_PASSIVE   /**< SRC to Initialize Type A passive listen config and subsequently call HAL AutoColl is included. */
+
             #define NXPBUILD__PHAC_DISCLOOP_TYPEA_TARGET_ACTIVE    /**< SRC to Initialize Type A active listen config and subsequently call HAL AutoColl is included. */
             #define NXPBUILD__PHAC_DISCLOOP_TYPEF212_TARGET_PASSIVE/**< SRC to Initialize Type F212 passive listen config and subsequently call HAL AutoColl is included. */
             #define NXPBUILD__PHAC_DISCLOOP_TYPEF212_TARGET_ACTIVE /**< SRC to Initialize Type F212 active listen config and subsequently call HAL AutoColl is included. */
             #define NXPBUILD__PHAC_DISCLOOP_TYPEF424_TARGET_PASSIVE/**< SRC to Initialize Type F424 passive listen config and subsequently call HAL AutoColl is included. */
             #define NXPBUILD__PHAC_DISCLOOP_TYPEF424_TARGET_ACTIVE /**< SRC to Initialize Type F424 active listen config and subsequently call HAL AutoColl is included. */
+
         #endif /* NXPBUILD__PHHAL_HW_TARGET */
     #endif
 
@@ -187,13 +190,16 @@
 
 //#define NXPBUILD__PH_CIDMANAGER_SW                            /**< CID Manager SW Component is included. */
 
-#define NXPBUILD__PH_KEYSTORE_SW                                  /**< SW KeyStore Component is included. */
+#define NXPBUILD__PH_KEYSTORE_SW                                /**< SW KeyStore Component is included. */
 
 #if defined(NXPBUILD__PHHAL_HW_RC663) && !defined(NXPBUILD__PH_KEYSTORE_SW)
-//  #define NXPBUILD__PH_KEYSTORE_RC663                         /**< RC663 KeyStore Component is included. */
+    #define NXPBUILD__PH_KEYSTORE_RC663                         /**< RC663 KeyStore Component is included. */
 #endif
+
 //#define NXPBUILD__PH_NDA_MFDF                                 /**< MIFARE DESFire contactless IC */
+
 #define NXPBUILD__PH_CRYPTOSYM_SW                             /**< Crypto Symbols SW Component is included. */
+
 #define NXPBUILD__PH_CRYPTORNG_SW                             /**< Crypto RNG SW Component is included. */
 
 /*********************************************************************************************************************************************************************************/
@@ -208,16 +214,42 @@
     #endif
     #define NXPBUILD__PHAL_MFUL_SW                              /**< AL Mifare Ultrlight SW Component is included */
     #define NXPBUILD__PHAL_MFDF_SW                              /**< AL Mifare DesFire SW Component is included */
-//  #define NXPBUILD__PHAL_MFNTAG42XDNA_SW                      /**< AL MIFARE Prime Ntag42XDna contactless IC SW Component is included */
+    //#define NXPBUILD__PHAL_MFNTAG42XDNA_SW                    /**< AL MIFARE Prime Ntag42XDna contactless IC SW Component is included */
 #endif /* NXPBUILD__PHPAL_MIFARE_SW */
 
-//#define NXPBUILD__PHAL_T1T_SW                                     /**< AL Type T1 Tag SW Component is included */
+#define NXPBUILD__PHAL_T1T_SW                                   /**< AL Type T1 Tag SW Component is included */
 
 #ifdef NXPBUILD__PHPAL_SLI15693_SW
     #define NXPBUILD__PHAL_ICODE_SW                            /**< AL ICODE SW COMPONENT is included */
 #endif /* NXPBUILD__PHPAL_SLI15693_SW */
 
-//#define NXPBUILD__PHAL_TOP_SW                                     /**< AL for TagOps Mapping SW Component is included.Required for NDEF operations */
+#ifdef NXPBUILD__PHAL_T1T_SW
+    #define NXPBUILD__PHAL_TOP_T1T_SW                          /**< AL TOP T1T Tag SW Component is included */
+#endif /* NXPBUILD__PHAL_T1T_SW */
+#ifdef NXPBUILD__PHAL_MFUL_SW
+    #define NXPBUILD__PHAL_TOP_T2T_SW                          /**< AL TOP T2T Tag SW Component is included */
+#endif /* NXPBUILD__PHAL_MFUL_SW*/
+#ifdef NXPBUILD__PHAL_FELICA_SW
+    #define NXPBUILD__PHAL_TOP_T3T_SW                          /**< AL TOP T3T Tag SW Component is included */
+#endif /* NXPBUILD__PHAL_FELICA_SW*/
+#ifdef NXPBUILD__PHPAL_MIFARE_SW
+    #define NXPBUILD__PHAL_TOP_T4T_SW                          /**< AL TOP T4T Tag SW Component is included */
+#endif /* NXPBUILD__PHPAL_MIFARE_SW*/
+#ifdef NXPBUILD__PHAL_ICODE_SW
+    #define NXPBUILD__PHAL_TOP_T5T_SW                          /**< AL TOP T5T Tag SW Component is included */
+#endif /* NXPBUILD__PHAL_ICODE_SW*/
+#ifdef NXPBUILD__PHPAL_I14443P3A_SW
+    #define NXPBUILD__PHAL_TOP_MFC_SW                          /**< AL TOP MFC Tag SW Component is included */
+#endif /* NXPBUILD__PHPAL_I14443P3A_SW*/
+
+#if defined(NXPBUILD__PHAL_TOP_T1T_SW) || \
+    defined(NXPBUILD__PHAL_TOP_T2T_SW) || \
+    defined(NXPBUILD__PHAL_TOP_T3T_SW) || \
+    defined(NXPBUILD__PHAL_TOP_T4T_SW) || \
+    defined(NXPBUILD__PHAL_TOP_T5T_SW) || \
+    defined(NXPBUILD__PHAL_TOP_MFC_SW)
+    #define NXPBUILD__PHAL_TOP_SW                              /**< AL for TagOps Mapping SW Component is included.Required for NDEF operations */
+#endif
 
 #ifdef NXPBUILD__PHPAL_I18000P3M3_SW
     #define NXPBUILD__PHAL_I18000P3M3_SW                        /**< AL ISO18000p3m3 SW Component is included */
@@ -234,7 +266,7 @@
 /* LLCP Components */
 #if defined(NXPBUILD__PHPAL_I18092MPI_SW) || defined(NXPBUILD__PHPAL_I18092MT_SW)
     #if !defined(PH_OSAL_NULLOS)
-        #define NXPBUILD__PHLN_LLCP_SW                           /**< Link LLCP SW Component is included */
+//      #define NXPBUILD__PHLN_LLCP_SW                           /**< Link LLCP SW Component is included */
     #endif
 #endif
 

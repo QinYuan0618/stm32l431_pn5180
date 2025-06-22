@@ -19,8 +19,8 @@
 * $Date: $
 */
 
-//#ifndef NFCRDLIBEX1_DISCOVERYLOOP_H
-//#define NFCRDLIBEX1_DISCOVERYLOOP_H
+#ifndef NFCRDLIBEX1_DISCOVERYLOOP_H
+#define NFCRDLIBEX1_DISCOVERYLOOP_H
 
 #include <ph_Status.h>
 
@@ -66,5 +66,4 @@
 #define DISC_DEMO_TASK_PRIO                 0
 #endif /* PH_OSAL_LINUX */
 
-extern int BasicDiscoveryLoop();
-//#endif /* NFCRDLIBEX1_DISCOVERYLOOP_H */
+#endif /* NFCRDLIBEX1_DISCOVERYLOOP_H */

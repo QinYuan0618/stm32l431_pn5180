@@ -355,7 +355,6 @@ phStatus_t phhalHw_Pn5180_Init(
         PH_CHECK_SUCCESS_FCT(statusTmp, phDriver_PinConfig(PHDRIVER_PIN_BUSY, PH_DRIVER_PINFUNC_INPUT, &pinCfg));
     }
 
-    printf("[------1]\n");
     /* Reset Pn5180 Front-end. */
     phhalHw_Pn5180_Reset();
 

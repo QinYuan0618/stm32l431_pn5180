@@ -730,35 +730,4 @@ static void phOsal_NullOsSysTickHandler(void)
 }*/
 //1     #endif /* PH_OSAL_NULLOS */
 
-/**
- * 最关键的延迟函数 - Discovery Loop必须要用
- * 这个函数在你的.c文件中完全缺失
- */
-phStatus_t phOsal_Wait(uint8_t bTimerDelayUnit, uint16_t wDelay)
-{
-    uint32_t dwDelayInMs = 0;
-
-    switch(bTimerDelayUnit)
-    {
-        case 0x00: // PH_OSAL_TIMER_UNIT_MS - 毫秒
-            dwDelayInMs = wDelay;
-            break;
-
-        case 0x01: // PH_OSAL_TIMER_UNIT_US - 微秒
-            dwDelayInMs = (wDelay / 1000);
-            if(dwDelayInMs == 0 && wDelay > 0)
-            {
-                dwDelayInMs = 1; // 至少延迟1ms
-            }
-            break;
-
-        default:
-            return (PH_OSAL_ERROR | PH_COMP_OSAL);
-    }
-
-    // 使用STM32 HAL库的延迟函数
-    HAL_Delay(dwDelayInMs);
-
-    return PH_OSAL_SUCCESS;
-}
 #endif

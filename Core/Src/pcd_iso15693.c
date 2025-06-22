@@ -110,6 +110,7 @@ static volatile uint8_t bInfLoop = 1U;
 **   Code
 *******************************************************************************/
 
+// 入口函数
 int iso15693_test(void)
 {
     do
@@ -124,32 +125,31 @@ int iso15693_test(void)
         /* Print Example application name */
         printf("\n *** ISO 15693 Example *** \n");
 
-        /* Hardware abstraction layer initialization */
+        /* Hardware abstraction layer initialization 硬件抽象层初始化 */
         status = phbalReg_Init(&sBalParams, sizeof(phbalReg_Type_t));	// set id and bus kind
         CHECK_STATUS(status);
 
-        /* Set NFC library context */
+        /* Set NFC library context 设置NFC库上下文 */
         AppContext.pBalDataparams = &sBalParams;
         dwStatus = phNfcLib_SetContext(&AppContext);
         CHECK_NFCLIB_STATUS(dwStatus);
 
-        /* NFC library initialization */
+        /* NFC library initialization NFC库初始化 */
         dwStatus = phNfcLib_Init();
         CHECK_NFCLIB_STATUS(dwStatus);
         if(dwStatus != PH_NFCLIB_STATUS_SUCCESS) break;
 
-        /* Set the generic pointer */
-        /* Get the parameter pointer of each component */
-        pHal = phNfcLib_GetDataParams(PH_COMP_HAL);
-        psalI15693 = phNfcLib_GetDataParams(PH_COMP_AL_ICODE);
-        pDiscLoop = phNfcLib_GetDataParams(PH_COMP_AC_DISCLOOP);
+        /* Set the generic pointer 获取各组件参数指针 */
+        pHal = phNfcLib_GetDataParams(PH_COMP_HAL);	// HAL层
+        psalI15693 = phNfcLib_GetDataParams(PH_COMP_AL_ICODE); // 应用层
+        pDiscLoop = phNfcLib_GetDataParams(PH_COMP_AC_DISCLOOP); // 发现循环
 
-        /* Initialize other components that are not initialized by NFCLIB and configure Discovery Loop. */
+        /* 组件初始化 Initialize other components that are not initialized by NFCLIB and configure Discovery Loop. */
         status = phApp_Comp_Init(pDiscLoop);
         CHECK_STATUS(status);
         if(status != PH_ERR_SUCCESS) break;
 
-        /* Perform Platform Init */
+        /* Perform Platform Init 配置IRQ */
         status = phApp_Configure_IRQ();
         CHECK_STATUS(status);
         if(status != PH_ERR_SUCCESS) break;
@@ -157,6 +157,7 @@ int iso15693_test(void)
         /* debug if spi communication read eeprom & register is ok */
 //        test_pn5180_spi_communication(pHal);
 
+        /* 主要检测循环 */
         (void)NfcrdlibEx5_ISO15693(pDiscLoop);
     } while(0);
 
@@ -185,50 +186,64 @@ void NfcrdlibEx5_ISO15693(void *pParams)
     /* This call shall allocate secure context before calling any secure function,
      * when FreeRtos trust zone is enabled.
      * */
-    phOsal_ThreadSecureStack( 512 );
+//    phOsal_ThreadSecureStack( 512 );
 
-    /* Initialize library */
+    /* Initialize library 示例初始化 */
     status = phExample_Init();
     CHECK_STATUS(status);
 
-    while(1)    /* Continuous loop */
+    while(1)    /* Continuous loop 无限循环 */
     {
         bNTag5_State = 0;
-        DEBUG_PRINTF("\nReady to detect");
-        DEBUG_PRINTF("\n");
+        printf("=== Starting new detection cycle ===\n");
 
         do
         {
-            /* Field OFF */
+            /* Field OFF 关闭RF场 */
+        	printf("Setting field OFF...\n");
             status = phhalHw_FieldOff(pHal);
             CHECK_STATUS(status);
+            printf("Field OFF status: 0x%04X\n", status);
 
+            /* 等待5秒（轮询或者中断模式） */
 			#ifdef USE_POLLING_MODE
 			// 轮询模式下的等待
+            printf("Using POLLING mode - waiting...\n");
 			uint32_t dwStartTime = HAL_GetTick();
 			while ((HAL_GetTick() - dwStartTime) < 5100)
 			{
-				// 主动检查和处理IRQ
+				// 轮询模式：主动检查IRQ状态
 				phhalHw_Pn5180_PollAndProcessIRQ(pHal);
 				HAL_Delay(1);
 			}
+			printf("Polling wait completed\n");
 			#else
 			// 原有的等待方式
+			printf("Using INTERRUPT mode - waiting...\n");
             /* !program stock at here! but we replace irq to discoeryLoop */
             status = phhalHw_Wait(pDiscLoop->pHalDataParams,PHHAL_HW_TIME_MICROSECONDS, 5100); // 设置超时时间5.1s
             CHECK_STATUS(status);
-			#endif
+            printf("Wait status: 0x%04X\n", status);
+            #endif
 
-            /* Configure Discovery loop for Poll Mode */
+            /* Configure Discovery loop for Poll Mode 配置发现循环 */
+            printf("Configuring discovery loop...\n");
             status = phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_NEXT_POLL_STATE, PHAC_DISCLOOP_POLL_STATE_DETECTION);
             CHECK_STATUS(status);
+            printf("SetConfig status: 0x%04X\n", status);
 
-            /* Run Discovery loop */
+            printf("Running discovery loop...\n");
+            /* Run Discovery loop 运行发现循环 */
             status = phacDiscLoop_Run(pDiscLoop, PHAC_DISCLOOP_ENTRY_POINT_POLL);
+            printf("Discovery loop status: 0x%04X\n", status);
 
+            // 添加一个小延时，避免过度占用CPU
+            phhalHw_Wait(pHal, PHHAL_HW_TIME_MILLISECONDS, 10);
         }while((status & PH_ERR_MASK) != PHAC_DISCLOOP_DEVICE_ACTIVATED); /* Exit on Card detection */
-
         /* Card detected */
+
+        printf("=== Card detected! ===\n");
+
         /* Get the tag types detected info */
         status = phacDiscLoop_GetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_TECH_DETECTED, &wTagsDetected);
 
@@ -247,7 +262,7 @@ void NfcrdlibEx5_ISO15693(void *pParams)
                 /* Copy UID */
                 memcpy(aReceivedUid, pDiscLoop->sTypeVTargetInfo.aTypeV[0].aUid, 0x08);
 
-                /* Check and display Card type info */
+                /* Check and display Card type info 显示卡片类型 */
                 if (DisplayCardTypeInfo(pDiscLoop->sTypeVTargetInfo.aTypeV[0].aUid, &bNTag5_State) == PH_ERR_SUCCESS)
                 {
                     do
@@ -258,7 +273,7 @@ void NfcrdlibEx5_ISO15693(void *pParams)
                         /* Block Read */
                         DEBUG_PRINTF("\nRead Data from Block %d", bBlock);
 
-                        /* Read single block */
+                        /* Read single block 读取单块 */
                         status = phalICode_ReadSingleBlock(psalI15693,
                             PHAL_ICODE_OPTION_OFF,
                             bBlock,
@@ -267,7 +282,7 @@ void NfcrdlibEx5_ISO15693(void *pParams)
                         /* Check for Status */
                         if(status != PH_ERR_SUCCESS)
                         {
-                            /* Print Error info */
+                            /* Print Error info 写入单块 */
                             DEBUG_PRINTF ("\nRead operation Failed!!!");
                             DEBUG_PRINTF("\nExecution aborted!!!\n");
                             break;
@@ -301,6 +316,7 @@ void NfcrdlibEx5_ISO15693(void *pParams)
                         DEBUG_PRINTF ("\nWrite Success");
                         DEBUG_PRINTF("\n\n --- End of Write Operation ---");
 
+                        /* 高速率读取 */
                         ReadMultipleBlock_HighDataRate(bNTag5_State);
 
                         DEBUG_PRINTF("\n\n --- End of Example ---\n\n");
@@ -352,28 +368,20 @@ void NfcrdlibEx5_ISO15693(void *pParams)
 static phStatus_t phExample_Init(void)
 {
     phStatus_t status;
-#if defined NXPBUILD__PHHAL_HW_RC663
-    uint8_t bChipVersion;
-#endif /* NXPBUILD__PHHAL_HW_RC663 */
 
-    /* Device limit for Type V (ISO 15693) */
+    /* Device limit for Type V (ISO 15693) 设置最多检测一张卡 */
     status = phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_TYPEV_DEVICE_LIMIT, 1);
     CHECK_STATUS(status);
 
-    /* Passive polling Tx Guard times in micro seconds. */
+    /* Passive polling Tx Guard times in micro seconds. 设置保护时间5ms */
     status = phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_GTV_VALUE_US, 5000);
     CHECK_STATUS(status);
 
-    /* Bailout on Type V (ISO 15693) detect */
+    /* Bailout on Type V (ISO 15693) detect 设置检测到Type V就退出 */
     status = phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_BAIL_OUT, PHAC_DISCLOOP_POS_BIT_MASK_V);
     CHECK_STATUS(status);
 
     /* Read Chip Version */
-#if defined NXPBUILD__PHHAL_HW_RC663
-    status = phhalHw_Rc663_ReadRegister(pHal, PHHAL_HW_RC663_REG_VERSION, &bChipVersion);
-    CHECK_STATUS(status);
-    DEBUG_PRINTF("\nReader chip RC663: 0x%02x\n", bChipVersion);
-#endif /* NXPBUILD__PHHAL_HW_RC663 */
 
     /* Return Success */
     return PH_ERR_SUCCESS;
@@ -602,6 +610,8 @@ phStatus_t phhalHw_Pn5180_PollAndProcessIRQ(phhalHw_Pn5180_DataParams_t * pDataP
     // 如果有中断标志
     if (dwIrqStatus != 0)
     {
+    	printf("IRQ detected: 0x%08X\n", dwIrqStatus);
+
         // 处理中断（原本在中断回调中的逻辑）
         if (pDataParams->pRFISRCallback != NULL)
         {
