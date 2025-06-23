@@ -140,7 +140,7 @@ phStatus_t phbalReg_Exchange(
 		pRxBuf = pRxBuffer;
 	}
 
-	printf("SPITX>> ");
+//1	printf("SPITX>> ");
 	for (int i = 0; i < wTxLength; i++)
 	{
 		uint8_t txByte = (pTxBuffer != NULL) ? pTxBuffer[i] : dummyTxByte;	// 发送1字节
@@ -152,23 +152,23 @@ phStatus_t phbalReg_Exchange(
 			return (PH_DRIVER_FAILURE | PH_COMP_DRIVER);
 		}
 
-		printf("%02X ", txByte);  // 打印发送内容
+//1		printf("%02X ", txByte);  // 打印发送内容
 
 		if (pRxBuf != NULL && i < wRxBufSize)
 		{
 			pRxBuf[i] = rxByte;
 		}
 	}
-	printf("\n");
+//1	printf("\n");
 
 	if (pRxBuf != NULL)
 	{
-		printf("SPIRX<< ");
+//1		printf("SPIRX<< ");
 		for (int i = 0; i < wTxLength && i < wRxBufSize; i++)
 		{
-			printf("%02X ", pRxBuf[i]);
+//1			printf("%02X ", pRxBuf[i]);
 		}
-		printf("\n");
+//1		printf("\n");
 	}
 
 	// 返回接收到的数据长度

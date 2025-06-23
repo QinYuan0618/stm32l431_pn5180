@@ -42,17 +42,31 @@
 /**
 * Reader Library Headers
 */
-#include <phApp_Init.h>
+#include "phApp_Init.h"
+#include "phhalHw.h"
+#include "stm32l4xx.h"
 
 /* Local headers */
-#include <NfcrdlibEx1_DiscoveryLoop.h>
-#include <NfcrdlibEx1_EmvcoProfile.h>
+#include <phOsal.h>
+#include "NfcrdlibEx1_DiscoveryLoop.h"
+#include "NfcrdlibEx1_EmvcoProfile.h"
+#include "phhalHw_Pn5180_Reg.h"
+#include "phhalHw_Pn5180_Instr.h"
 
+#define PH_OSAL_NULLOS         1
+
+// 在编译选项或头文件中添加
+#define ENABLE_DISC_CONFIG
+
+// 确保支持你要测试的卡片类型
+#define NXPBUILD__PHAC_DISCLOOP_TYPEA_TAGS  // 支持ISO14443A
+#define NXPBUILD__PHAC_DISCLOOP_TYPEV_TAGS  // 支持ISO15693
 /*******************************************************************************
 **   Definitions
 *******************************************************************************/
 
 phacDiscLoop_Sw_DataParams_t       * pDiscLoop;       /* Discovery loop component */
+phalMful_Sw_DataParams_t           * palMful;       /* Pointer to AL MFUL data-params */
 
 #ifdef NXPBUILD__PHHAL_HW_TARGET
 /*The below variables needs to be initialized according to example requirements by a customer */
@@ -76,7 +90,7 @@ const uint8_t bTaskName[configMAX_TASK_NAME_LEN] = {"DiscLoop"};
 #else
 const uint8_t bTaskName[] = {"DiscLoop"};
 #endif /* PH_OSAL_FREERTOS */
-
+void TestRFField(void);
 /*******************************************************************************
 **   Static Defines
 *******************************************************************************/
@@ -95,6 +109,8 @@ static volatile uint8_t bInfLoop = 1U;
 void DiscoveryLoop_Demo(void  *pDataParams);
 uint16_t NFCForumProcess(uint16_t wEntryPoint, phStatus_t DiscLoopStatus);
 
+extern uint8_t str[];           //1
+
 #ifdef ENABLE_DISC_CONFIG
 static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile);
 #endif /* ENABLE_DISC_CONFIG */
@@ -103,7 +119,7 @@ static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile);
 **   Code
 *******************************************************************************/
 
-int main(void)
+int nfc_discovery_main(void)
 {
     do
     {
@@ -121,7 +137,7 @@ int main(void)
         phApp_CPU_Init();
 
         /* Perform OSAL Initialization. */
-        (void)phOsal_Init();
+//        (void)phOsal_Init(); // STM32的HAL_Ini()中已经配置了Systick，通过HAL_InitTick()，不需要OSAL的定时器
 
         DEBUG_PRINTF("\n DiscoveryLoop Example: \n");
 
@@ -190,7 +206,9 @@ void DiscoveryLoop_Demo(void  *pDataParams)
     /* This call shall allocate secure context before calling any secure function,
      * when FreeRtos trust zone is enabled.
      * */
-    phOsal_ThreadSecureStack( 512 );
+//    phOsal_ThreadSecureStack( 512 ); // 这是FreeRTOS Trust Zone相关的，裸机不需要
+
+    DEBUG_PRINTF("Entering Discovery Loop Demo...\r\n");
 
 #ifdef ENABLE_DISC_CONFIG
 
@@ -220,9 +238,14 @@ void DiscoveryLoop_Demo(void  *pDataParams)
     /* Switch off RF field */
     statustmp = phhalHw_FieldOff(pHal);
     CHECK_STATUS(statustmp);
+    DEBUG_PRINTF("RF Field OFF status: 0x%04X\r\n", statustmp);
+
+    TestRFField();
 
     while(1)
     {
+    	DEBUG_PRINTF("Poll cycle start...\r\n");
+
         /* Before polling set Discovery Poll State to Detection , as later in the code it can be changed to e.g. PHAC_DISCLOOP_POLL_STATE_REMOVAL*/
         statustmp = phacDiscLoop_SetConfig(pDataParams, PHAC_DISCLOOP_CONFIG_NEXT_POLL_STATE, PHAC_DISCLOOP_POLL_STATE_DETECTION);
         CHECK_STATUS(statustmp);
@@ -246,7 +269,11 @@ void DiscoveryLoop_Demo(void  *pDataParams)
 #endif /* PH_EXAMPLE1_LPCD_ENABLE*/
 
         /* Start discovery loop */
+        /* PROGRAM BLOCK HERE!!! */
         status = phacDiscLoop_Run(pDataParams, wEntryPoint);
+
+        /* 输出：0x4080  或者  0x4083 */
+        DEBUG_PRINTF("Discovery result: 0x%04X\r\n", status);
 
         if(bProfile == PHAC_DISCLOOP_PROFILE_EMVCO)
         {
@@ -270,7 +297,10 @@ void DiscoveryLoop_Demo(void  *pDataParams)
 
             /* Wait for field-off time-out */
             statustmp = phhalHw_Wait(pHal, PHHAL_HW_TIME_MICROSECONDS, 5100);
-            CHECK_STATUS(statustmp);
+            CHECK_STATUS(statustmp);	// error
+
+            DEBUG_PRINTF("Poll cycle complete, waiting...\r\n");  // 添加这行
+            HAL_Delay(1000);  // 添加1秒延时，方便观察
         }
     }
 }
@@ -773,3 +803,34 @@ static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile)
     return status;
 }
 #endif /* ENABLE_DISC_CONFIG */
+
+
+/* 测试射频场 */
+void TestRFField(void)
+{
+    phStatus_t status;
+    uint32_t regValue;
+
+    printf("\n=== RF FIELD TEST ===\n");
+
+    // 2. 检查RF状态
+    status = phhalHw_Pn5180_Instr_ReadRegister(pHal, RF_STATUS, &regValue);
+    printf("RF_STATUS: 0x%08lX (status: 0x%04X)\n", regValue, status);
+
+    // 3. 强制开启RF场
+    printf("Turning RF Field ON...\n");
+    status = phhalHw_FieldOn(pHal);
+    printf("FieldOn status: 0x%04X\n", status);
+
+    HAL_Delay(100);  // 等待RF场稳定
+
+    // 4. 再次检查RF状态
+    status = phhalHw_Pn5180_Instr_ReadRegister(pHal, RF_STATUS, &regValue);
+    printf("RF_STATUS after FieldOn: 0x%08lX\n", regValue);
+
+    // 5. 检查IRQ状态
+    status = phhalHw_Pn5180_Instr_ReadRegister(pHal, IRQ_STATUS, &regValue);
+    printf("IRQ_STATUS: 0x%08lX\n", regValue);
+
+    printf("=== RF FIELD TEST COMPLETE ===\n\n");
+}

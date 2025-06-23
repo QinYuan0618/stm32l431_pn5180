@@ -28,6 +28,7 @@
 *
 */
 
+#include "phhalHw.h"
 /* Status header */
 #include <ph_Status.h>
 
@@ -239,10 +240,12 @@ static void phApp_K82_Init(void)
 */
 void phApp_CPU_Init(void)
 {
+	DEBUG_PRINTF("STM32 CPU already initialized\r\n");
 #if defined PHDRIVER_KINETIS_K82
     phApp_K82_Init();
 #elif defined(PHDRIVER_LPC1769) && defined(__CC_ARM)
-    SystemCoreClock =  (( unsigned long ) 96000000);
+//    SystemCoreClock =  (( unsigned long ) 96000000);
+    SystemCoreClock = ((unsigned long)80000000);              // 改为80MHz
 #elif defined(PH_OSAL_LINUX) && defined(NXPBUILD__PHHAL_HW_PN5190)
     phStatus_t  status;
     status = PiGpio_OpenIrq();
@@ -318,46 +321,8 @@ phStatus_t phApp_Comp_Init(void * pDiscLoopParams)
 
 phStatus_t phApp_Configure_IRQ()
 {
-#ifdef PH_OSAL_LINUX
-    phStatus_t  wStatus;
-#endif /* PH_OSAL_LINUX */
-
-#ifdef PH_PLATFORM_HAS_ICFRONTEND
-#if !(defined(PH_OSAL_LINUX) && defined(NXPBUILD__PHHAL_HW_PN5190))
-    phDriver_Pin_Config_t pinCfg;
-
-    pinCfg.bOutputLogic = PH_DRIVER_SET_LOW;
-    pinCfg.bPullSelect = PHDRIVER_PIN_IRQ_PULL_CFG;
-
-    pinCfg.eInterruptConfig = PIN_IRQ_TRIGGER_TYPE;
-    phDriver_PinConfig(PHDRIVER_PIN_IRQ, PH_DRIVER_PINFUNC_INTERRUPT, &pinCfg);
-#endif
-
-#ifdef PHDRIVER_LPC1769
-    NVIC_SetPriority(EINT_IRQn, EINT_PRIORITY);
-    /* Enable interrupt in the NVIC */
-    NVIC_ClearPendingIRQ(EINT_IRQn);
-    NVIC_EnableIRQ(EINT_IRQn);
-#endif /* PHDRIVER_LPC1769 */
-
-#ifdef PH_OSAL_LINUX
-
-    gphPiThreadObj.pTaskName = (uint8_t *) "IrqPolling";
-    gphPiThreadObj.pStackBuffer = NULL;
-    gphPiThreadObj.priority = PI_IRQ_POLLING_TASK_PRIO;
-    gphPiThreadObj.stackSizeInNum = PI_IRQ_POLLING_TASK_STACK;
-    PH_CHECK_SUCCESS_FCT(wStatus, phOsal_ThreadCreate(&gphPiThreadObj.ThreadHandle, &gphPiThreadObj,
-        &phExample_IrqPolling, NULL));
-
-#endif /* PH_OSAL_LINUX */
-
-#ifdef PHDRIVER_KINETIS_K82
-    NVIC_SetPriority(EINT_IRQn, EINT_PRIORITY);
-    NVIC_ClearPendingIRQ(EINT_IRQn);
-    EnableIRQ(EINT_IRQn);
-#endif /* PHDRIVER_KINETIS_K82 */
-
-#endif /* #ifdef PH_PLATFORM_HAS_ICFRONTEND */
+    // 简化版本 - 不配置IRQ，直接返回成功
+    DEBUG_PRINTF("IRQ configuration skipped - using polling mode\r\n");
 
     return PH_ERR_SUCCESS;
 }

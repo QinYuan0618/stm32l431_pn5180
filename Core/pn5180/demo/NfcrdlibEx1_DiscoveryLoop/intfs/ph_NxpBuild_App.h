@@ -20,6 +20,13 @@
 *
 */
 
+#define NXPBUILD__PHHAL_HW_PN5180              // PN5180 HAL
+#define NXPBUILD__PHAC_DISCLOOP_SW             // Discovery Loop
+#define NXPBUILD__PHAC_DISCLOOP_TYPEV_TAGS     // Type V (ISO15693) 支持
+
+// 确保DEBUG模式
+#define NXPBUILD__PH_DEBUG
+
 #ifndef PH_NXPBUILD_APP_H_INC
 #define PH_NXPBUILD_APP_H_INC
 

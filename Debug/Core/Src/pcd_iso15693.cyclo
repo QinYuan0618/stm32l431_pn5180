@@ -1,6 +1,0 @@
-../Core/Src/pcd_iso15693.c:114:5:iso15693_test	10
-../Core/Src/pcd_iso15693.c:174:6:NfcrdlibEx5_ISO15693	14
-../Core/Src/pcd_iso15693.c:368:19:phExample_Init	4
-../Core/Src/pcd_iso15693.c:395:19:DisplayCardTypeInfo	16
-../Core/Src/pcd_iso15693.c:518:13:ReadMultipleBlock_HighDataRate	1
-../Core/Src/pcd_iso15693.c:601:12:phhalHw_Pn5180_PollAndProcessIRQ	4

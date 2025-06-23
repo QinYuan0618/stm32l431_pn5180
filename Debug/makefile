@@ -99,7 +99,8 @@ RM := rm -rf
 -include Core/pn5180/library/comps/phCryptoASym/src/subdir.mk
 -include Core/pn5180/library/comps/phCidManager/src/Sw/subdir.mk
 -include Core/pn5180/library/comps/phCidManager/src/subdir.mk
--include Core/pn5180/demo/NfcrdlibEx5_ISO15693/src/subdir.mk
+-include Core/pn5180/demo/NfcrdlibEx1_DiscoveryLoop/src/subdir.mk
+-include Core/pn5180/demo/NfcrdlibEx1_DiscoveryLoop/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
 -include objects.mk

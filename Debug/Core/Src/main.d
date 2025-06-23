@@ -31,19 +31,19 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h \
  ../Core/Inc/spi.h ../Core/Inc/main.h ../Core/Inc/tim.h \
  ../Core/Inc/usart.h ../Core/Inc/gpio.h \
- E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/demo/Ex1_DiscoveryLoop/intfs/NfcrdlibEx1_DiscoveryLoop.h \
+ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/demo/NfcrdlibEx1_DiscoveryLoop/intfs/NfcrdlibEx1_DiscoveryLoop.h \
+ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phhalHw.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_Status.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_TypeDefs.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_NxpBuild.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_NxpBuild_Platform.h \
- E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phhalHw.h \
  ../Core/pn5180/portable/phOsal/inc/phOsal.h \
  ../Core/pn5180/portable/phOsal/inc/phOsal_Config.h \
  ../Core/pn5180/portable/phOsal/inc/../src/NullOs/phOsal_NullOs.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phhalHw/src/Pn5180/phhalHw_Pn5180.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phhalHw_Pn5180_Reg.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_RefDefs.h \
- E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/demo/Ex1_DiscoveryLoop/intfs/phApp_Init.h \
+ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/demo/NfcrdlibEx1_DiscoveryLoop/intfs/phApp_Init.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/portable/DAL/inc/phDriver.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/portable/DAL/inc/phbalReg.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/portable/DAL/inc/phDriver_Gpio.h \
@@ -61,6 +61,10 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phpalI14443p4/src/Sw/phpalI14443p4_Sw.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalFelica.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phpalFelica/src/Sw/phpalFelica_Sw.h \
+ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalI18092mPI.h \
+ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phpalI18092mPI/src/Sw/phpalI18092mPI_Sw.h \
+ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalI18092mT.h \
+ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phpalI18092mT/src/Sw/phpalI18092mT_Sw.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalI14443p4mC.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phpalI14443p4mC/src/Sw/phpalI14443p4mC_Sw.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalSli15693.h \
@@ -100,8 +104,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phlnLlcp.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phTools.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phnpSnep.h \
- E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/portable/DAL/boards/Board_Stm32l431_Pn5180.h \
- ../Core/Inc/pcd_iso15693.h
+ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/portable/DAL/boards/Board_Stm32l431_Pn5180.h
 ../Core/Inc/main.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h:
 ../Core/Inc/stm32l4xx_hal_conf.h:
@@ -138,19 +141,19 @@ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Drivers/STM32L4xx_HAL_Driver/
 ../Core/Inc/tim.h:
 ../Core/Inc/usart.h:
 ../Core/Inc/gpio.h:
-E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/demo/Ex1_DiscoveryLoop/intfs/NfcrdlibEx1_DiscoveryLoop.h:
+E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/demo/NfcrdlibEx1_DiscoveryLoop/intfs/NfcrdlibEx1_DiscoveryLoop.h:
+E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phhalHw.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_Status.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_TypeDefs.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_NxpBuild.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_NxpBuild_Platform.h:
-E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phhalHw.h:
 ../Core/pn5180/portable/phOsal/inc/phOsal.h:
 ../Core/pn5180/portable/phOsal/inc/phOsal_Config.h:
 ../Core/pn5180/portable/phOsal/inc/../src/NullOs/phOsal_NullOs.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phhalHw/src/Pn5180/phhalHw_Pn5180.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phhalHw_Pn5180_Reg.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_RefDefs.h:
-E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/demo/Ex1_DiscoveryLoop/intfs/phApp_Init.h:
+E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/demo/NfcrdlibEx1_DiscoveryLoop/intfs/phApp_Init.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/portable/DAL/inc/phDriver.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/portable/DAL/inc/phbalReg.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/portable/DAL/inc/phDriver_Gpio.h:
@@ -168,6 +171,10 @@ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/php
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phpalI14443p4/src/Sw/phpalI14443p4_Sw.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalFelica.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phpalFelica/src/Sw/phpalFelica_Sw.h:
+E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalI18092mPI.h:
+E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phpalI18092mPI/src/Sw/phpalI18092mPI_Sw.h:
+E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalI18092mT.h:
+E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phpalI18092mT/src/Sw/phpalI18092mT_Sw.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalI14443p4mC.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phpalI14443p4mC/src/Sw/phpalI14443p4mC_Sw.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalSli15693.h:
@@ -208,4 +215,3 @@ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phl
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phTools.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phnpSnep.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/portable/DAL/boards/Board_Stm32l431_Pn5180.h:
-../Core/Inc/pcd_iso15693.h:

@@ -1154,15 +1154,13 @@ phStatus_t phhalHw_Pn5180_Int_Wait(
 
     uint32_t irqEnable;
     phhalHw_Pn5180_Instr_ReadRegister(pDataParams, IRQ_ENABLE, &irqEnable);
-    printf("Before WaitIrq, we should check IRQ_ENABLE Register first.\nIRQ_ENABLE before wait: 0x%08X\n", irqEnable);
-    // 检查当前IRQ_STATUS
+
     uint32_t irqStatus;
     phhalHw_Pn5180_Instr_ReadRegister(pDataParams, IRQ_STATUS, &irqStatus);
-    printf("IRQ_STATUS before wait: 0x%08X\n", irqStatus);
 
     /* Wait for the timer0 to expire. */
     PH_CHECK_SUCCESS_FCT(statusTmp,phhalHw_Pn5180_WaitIrq(pDataParams,PH_ON,PH_OFF,IRQ_STATUS_TIMER0_IRQ_MASK,&dwIrqStatusReg));
-    printf("\n -----debug 0.5-----\n");
+
     PH_CHECK_SUCCESS_FCT(statusTmp, phhalHw_Pn5180_Instr_WriteRegisterAndMask(pDataParams,TIMER0_CONFIG, (uint32_t)(~TIMER0_CONFIG_T0_ENABLE_MASK)));
     return PH_ERR_SUCCESS;
 }

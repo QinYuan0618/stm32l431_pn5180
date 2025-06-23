@@ -76,4 +76,3 @@ int test_pn5180_spi_communication(phhalHw_Pn5180_DataParams_t * pHal)
 
     return 0;
 }
-

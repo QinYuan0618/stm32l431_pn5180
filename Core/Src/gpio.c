@@ -69,6 +69,12 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(PN5180_NSS_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PN5180_IRQ_Pin */
+  GPIO_InitStruct.Pin = PN5180_IRQ_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(PN5180_IRQ_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : PN5180_RST_Pin */
   GPIO_InitStruct.Pin = PN5180_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;

@@ -62,7 +62,6 @@ static void phhalHw_Pn5180_WriteSSEL(phbalReg_Type_t *pBalDataParams, uint8_t bV
     pShadowDefault = &(USED_SHADOW)[0][0]; \
     wShadowCount = (uint16_t)(sizeof((USED_SHADOW)) / (sizeof((USED_SHADOW)[0])))
 
-static const uint8_t bHalEventName[] = "Hal";
 static phOsal_Event_t xEventHandle;
 
 /* Default shadow for ISO14443-3A Mode */
@@ -257,7 +256,9 @@ phStatus_t phhalHw_Pn5180_Init(
 {
     phStatus_t PH_MEMLOC_REM statusTmp;
     uint8_t    PH_MEMLOC_REM bFirmwareVer[2];
+//    uint8_t    PH_MEMLOC_REM bPowerStatus[16];
     uint8_t PH_MEMLOC_BUF bDigitalDelayCfg;
+    uint8_t    InitGearSize = 0x01;  // 1
 #ifndef _WIN32
     phDriver_Pin_Config_t pinCfg;
 #endif
@@ -329,7 +330,7 @@ phStatus_t phhalHw_Pn5180_Init(
 
 #ifndef _WIN32
 
-
+#if 0  // 在MX中已经设置好了
     /* Config Reset pin as output and set to high. */
     pinCfg.bPullSelect = PHDRIVER_PIN_RESET_PULL_CFG;
     pinCfg.bOutputLogic = RESET_POWERUP_LEVEL;
@@ -354,7 +355,7 @@ phStatus_t phhalHw_Pn5180_Init(
         pinCfg.bPullSelect = PHDRIVER_PIN_BUSY_PULL_CFG;
         PH_CHECK_SUCCESS_FCT(statusTmp, phDriver_PinConfig(PHDRIVER_PIN_BUSY, PH_DRIVER_PINFUNC_INPUT, &pinCfg));
     }
-
+#endif
     /* Reset Pn5180 Front-end. */
     phhalHw_Pn5180_Reset();
 
@@ -374,13 +375,14 @@ phStatus_t phhalHw_Pn5180_Init(
             pDataParams->bIsTestBusEnabled = PH_ON;
         }
 
-
         /* De-assert NSS pin. */
         phhalHw_Pn5180_WriteSSEL(pBalDataParams, PH_DRIVER_SET_HIGH);
     }
 
-    PH_CHECK_SUCCESS_FCT(statusTmp, phhalHw_Pn5180_Instr_ReadE2Prom(pDataParams, PHHAL_HW_PN5180_FIRMWARE_VERSION_ADDR, bFirmwareVer, 2U));
+#endif
 
+    PH_CHECK_SUCCESS_FCT(statusTmp, phhalHw_Pn5180_Instr_ReadE2Prom(pDataParams, PHHAL_HW_PN5180_FIRMWARE_VERSION_ADDR, bFirmwareVer, 2U));
+    printf("PN-Firmware = %02X %02X\n", bFirmwareVer[1], bFirmwareVer[0]);
     if ( (0xFFU == bFirmwareVer[0]) && (0xFFU == bFirmwareVer[1]) )
     {
         /* SPI Read problem... it is returing all FFFFs..
@@ -398,6 +400,9 @@ phStatus_t phhalHw_Pn5180_Init(
         pDataParams->bIsTestBusEnabled = PH_OFF;
     }
 
+    /* add func ：Set Power Gear Size*/
+    PH_CHECK_SUCCESS_FCT(statusTmp, phhalHw_Pn5180_Instr_WriteE2Prom(pDataParams, 0x81, &InitGearSize, 1U));
+
     /* Disable Idle IRQ */
     PH_CHECK_SUCCESS_FCT(statusTmp, phhalHw_Pn5180_Instr_WriteRegisterAndMask(pDataParams, IRQ_ENABLE, (uint32_t)~IRQ_SET_CLEAR_IDLE_IRQ_CLR_MASK));
 
@@ -405,7 +410,7 @@ phStatus_t phhalHw_Pn5180_Init(
     PH_CHECK_SUCCESS_FCT(statusTmp, phhalHw_Pn5180_Instr_WriteRegister(pDataParams, IRQ_SET_CLEAR, PHHAL_HW_PN5180_IRQ_SET_CLEAR_ALL_MASK));
 
     /* Create the event. */
-    pDataParams->HwEventObj.pEvtName = (uint8_t *)bHalEventName;
+//    pDataParams->HwEventObj.pEvtName = (uint8_t *)bHalEventName;
     pDataParams->HwEventObj.intialValue = 0U;
     PH_CHECK_SUCCESS_FCT(statusTmp, phOsal_EventCreate(&pDataParams->HwEventObj.EventHandle, &pDataParams->HwEventObj));
 
@@ -454,7 +459,6 @@ phStatus_t phhalHw_Pn5180_Init(
             }
         }
     }
-
     return PH_ERR_SUCCESS;
 }
 
@@ -1038,7 +1042,7 @@ phStatus_t phhalHw_Pn5180_Wait(
     uint32_t    PH_MEMLOC_REM dwLoadValue;	// 定时器加载值
     uint32_t    PH_MEMLOC_REM wPrescaler;	// 预分频值
     uint32_t    PH_MEMLOC_REM wFreq;		// 频率值
-    printf("\n -----debug -1-----\n");
+
     /* Parameter check: only ms or us is accepted */
     if ((bUnit != PHHAL_HW_TIME_MICROSECONDS) && (bUnit != PHHAL_HW_TIME_MILLISECONDS))
     {
@@ -3830,5 +3834,3 @@ static void phhalHw_Pn5180_WriteSSEL(phbalReg_Type_t *pBalDataParams, uint8_t bV
     }
 }
 #endif /* _WIN32 */
-
-#endif  /* NXPBUILD__PHHAL_HW_PN5180 */

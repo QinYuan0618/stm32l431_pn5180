@@ -35,7 +35,7 @@
 #include "stm32l4xx_hal_spi.h"
 #include "phApp_Init.h"			// include pHal 声明
 #include "Board_Stm32l431_Pn5180.h"
-#include "pcd_iso15693.h"
+#include "NfcrdlibEx1_DiscoveryLoop.h"  // 包含demo头文件
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -115,7 +115,8 @@ int main(void)
 
   beep_start(1, 300); 	/* 蜂鸣器响1声 */
 
-  iso15693_test();
+  /* 调用NFC Disvery功能*/
+  nfc_discovery_main();
 
   /* USER CODE END 2 */
 

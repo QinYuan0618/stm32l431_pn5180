@@ -24,7 +24,8 @@ C_DEPS :=
 SUBDIRS := \
 Core/Src \
 Core/Startup \
-Core/pn5180/demo/NfcrdlibEx5_ISO15693/src \
+Core/pn5180/demo/NfcrdlibEx1_DiscoveryLoop \
+Core/pn5180/demo/NfcrdlibEx1_DiscoveryLoop/src \
 Core/pn5180/library/comps/phCidManager/src/Sw \
 Core/pn5180/library/comps/phCidManager/src \
 Core/pn5180/library/comps/phCryptoASym/src/mBedTLS \

@@ -52,7 +52,7 @@ phStatus_t phhalHw_Pn5180_WaitIrq(
     phOsal_EventBits_t PH_MEMLOC_REM tReceivedEvents;
 
     // debug below----
-    printf("WaitIrq: bEnableIrq=0x%02X, dwIrqWaitFor=0x%08X\n", bEnableIrq, dwIrqWaitFor);
+    printf("WaitIrq: bEnableIrq=0x%02X, dwIrqWaitFor=0x%08lX\n", bEnableIrq, dwIrqWaitFor);
 
     // debug top----
 
@@ -75,7 +75,8 @@ phStatus_t phhalHw_Pn5180_WaitIrq(
     }
 
     /* If requested by the user, enable the corresponding IRQs */
-    if ((bEnableIrq & PHHAL_HW_CHECK_IRQ_PIN_MASK) != PH_OFF)
+//    if ((bEnableIrq & PHHAL_HW_CHECK_IRQ_PIN_MASK) != PH_OFF)
+    if(0)	// 强制跳过IRQ PIN模式，使用polling
     {
     	printf("Using IRQ PIN mode\n"); //debug
         /*wait for IRQ pin event or Abort event*/
@@ -124,6 +125,7 @@ phStatus_t phhalHw_Pn5180_WaitIrq(
         /* Wait until any of the IRQ bits that we are subscribing for occurs */
         do
         {
+#ifndef _WIN32
             /* If Test Bus is enabled, we should avoid polling on registers
              * continuously as we put SPI noise on RF. */
             if ( pDataParams->bIsTestBusEnabled == PH_ON)
@@ -138,7 +140,7 @@ phStatus_t phhalHw_Pn5180_WaitIrq(
                     phDriver_TimerStart(PH_DRIVER_TIMER_MILLI_SECS, pDataParams->wWaitIRQDelayWithTestBus, NULL);
                 }
             }
-
+#endif
             /* Read the IRQ register and check if the interrupt has occured */
             PH_CHECK_SUCCESS_FCT(statusTmp, phhalHw_Pn5180_Instr_ReadRegister(pDataParams, IRQ_STATUS, &dwRegister));
         }while((0U == ((dwRegister & dwIrqWaitFor))));

@@ -19,6 +19,11 @@
 * $Date: $
 */
 
+// mian函数入口
+int nfc_discovery_main(void);
+
+#define LISTEN_PHASE_TIME_MS              300       /* Listen Phase TIME */
+
 #ifndef NFCRDLIBEX1_DISCOVERYLOOP_H
 #define NFCRDLIBEX1_DISCOVERYLOOP_H
 
@@ -32,7 +37,6 @@
         #define PH_EXAMPLE1_LPCD_ENABLE             /* If LPCD needs to be configured and used over HAL or over DiscLoop */
 #endif
 
-#define LISTEN_PHASE_TIME_MS              300       /* Listen Phase TIME */
 
 /* Enables configuring of Discovery loop */
 #define ENABLE_DISC_CONFIG

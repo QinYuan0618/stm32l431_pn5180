@@ -123,7 +123,7 @@
     #define NXPBUILD__PHPAL_EPCUID_SW                       /**< PAL EPC UID SW Component is included. */
 #endif /* NXPBUILD__PHHAL_HW_RC663 */
 
-//    #define NXPBUILD__PHPAL_I18092MPI_SW                    /**< PAL ISO18092 (P2P) SW Component is included. */
+    #define NXPBUILD__PHPAL_I18092MPI_SW                    /**< PAL ISO18092 (P2P) SW Component is included. */
 
 #ifdef NXPBUILD__PHPAL_I18092MPI_SW                         /**< If FE HAL is RC663, then include EPC UID PAL as required, otherwise exclude. */
     #define NXPBUILD__PHPAL_I18092MPI_SW_PROPRIETARY_PSL    /**< PAL ISO 18092 Initiator Mode proprietary PSL support. */
@@ -132,7 +132,7 @@
 #ifndef NXPBUILD__PHHAL_HW_RC663                            /**< If FE HAL is RC663, then exclude ISO14443 Card Mode PAL & ISO18092 Target Mode PAL, otherwise include as required. */
         #define NXPBUILD__PHPAL_I14443P4MC_SW               /**< PAL ISO 14443-4 Card Mode SW Component is included. */
 
-//            #define NXPBUILD__PHPAL_I18092MT_SW             /**< PAL ISO 18092 Target Mode SW Component is included. */
+            #define NXPBUILD__PHPAL_I18092MT_SW             /**< PAL ISO 18092 Target Mode SW Component is included. */
 
         #ifdef NXPBUILD__PHPAL_I18092MT_SW                      /**< If FE HAL is RC663, then include EPC UID PAL as required, otherwise exclude. */
             #define NXPBUILD__PHPAL_I18092MT_SW_PROPRIETARY_PSL /**< PAL ISO 18092 Target Mode proprietary PSL support. */
