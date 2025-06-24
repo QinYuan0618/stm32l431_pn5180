@@ -62,6 +62,8 @@ static void phhalHw_Pn5180_WriteSSEL(phbalReg_Type_t *pBalDataParams, uint8_t bV
     pShadowDefault = &(USED_SHADOW)[0][0]; \
     wShadowCount = (uint16_t)(sizeof((USED_SHADOW)) / (sizeof((USED_SHADOW)[0])))
 
+static const uint8_t bHalEventName[] = "Hal";
+
 static phOsal_Event_t xEventHandle;
 
 /* Default shadow for ISO14443-3A Mode */
@@ -330,7 +332,7 @@ phStatus_t phhalHw_Pn5180_Init(
 
 #ifndef _WIN32
 
-#if 0  // 在MX中已经设置好了
+#if 0  // 在MX中已经设置好了，不再需要在此处配置
     /* Config Reset pin as output and set to high. */
     pinCfg.bPullSelect = PHDRIVER_PIN_RESET_PULL_CFG;
     pinCfg.bOutputLogic = RESET_POWERUP_LEVEL;
@@ -382,7 +384,8 @@ phStatus_t phhalHw_Pn5180_Init(
 #endif
 
     PH_CHECK_SUCCESS_FCT(statusTmp, phhalHw_Pn5180_Instr_ReadE2Prom(pDataParams, PHHAL_HW_PN5180_FIRMWARE_VERSION_ADDR, bFirmwareVer, 2U));
-    printf("PN-Firmware = %02X %02X\n", bFirmwareVer[1], bFirmwareVer[0]);
+    printf("PN-Firmware = %02X %02X\n", bFirmwareVer[1], bFirmwareVer[0]);	// PN-Firmware = 04 00
+
     if ( (0xFFU == bFirmwareVer[0]) && (0xFFU == bFirmwareVer[1]) )
     {
         /* SPI Read problem... it is returing all FFFFs..
@@ -410,7 +413,7 @@ phStatus_t phhalHw_Pn5180_Init(
     PH_CHECK_SUCCESS_FCT(statusTmp, phhalHw_Pn5180_Instr_WriteRegister(pDataParams, IRQ_SET_CLEAR, PHHAL_HW_PN5180_IRQ_SET_CLEAR_ALL_MASK));
 
     /* Create the event. */
-//    pDataParams->HwEventObj.pEvtName = (uint8_t *)bHalEventName;
+//    pDataParams->HwEventObj.pEvtName = (uint8_t *)bHalEventName;  // 1
     pDataParams->HwEventObj.intialValue = 0U;
     PH_CHECK_SUCCESS_FCT(statusTmp, phOsal_EventCreate(&pDataParams->HwEventObj.EventHandle, &pDataParams->HwEventObj));
 
@@ -997,48 +1000,14 @@ phStatus_t phhalHw_Pn5180_FieldOff(
     return PH_ERR_SUCCESS;
 }
 
+// no change if not def USE_POLLING_MODE
 phStatus_t phhalHw_Pn5180_Wait(
     phhalHw_Pn5180_DataParams_t * pDataParams,
     uint8_t bUnit,
     uint16_t wTimeout		// 等待超时时间
     )
 {
-	#ifdef USE_POLLING_MODE
-    // 轮询模式：主动检查IRQ_STATUS寄存器
-    uint32_t dwStartTime = HAL_GetTick();
-    uint32_t dwTimeout = wTimeout;
-
-    if (bUnit == PHHAL_HW_TIME_MICROSECONDS) {
-        dwTimeout = (wTimeout + 999) / 1000; // 转换为毫秒
-    }
-
-    while ((HAL_GetTick() - dwStartTime) < dwTimeout)
-    {
-        // 读取IRQ_STATUS寄存器
-        uint32_t dwIrqStatus;
-        phStatus_t status;
-
-        // 读取IRQ_STATUS寄存器
-        status = phhalHw_Pn5180_ReadRegister(pDataParams, IRQ_STATUS, &dwIrqStatus);
-        if (status != PH_ERR_SUCCESS)
-        {
-    	    return status;
-        }
-
-        // 使用正确的宏定义检查中断标志
-        if (dwIrqStatus & (IRQ_STATUS_RX_IRQ_MASK | IRQ_STATUS_IDLE_IRQ_MASK | IRQ_STATUS_TX_IRQ_MASK))
-        {
-            // 清除检测到的中断标志
-            phhalHw_Pn5180_WriteRegister(pDataParams, IRQ_SET_CLEAR, dwIrqStatus);
-            return PH_ERR_SUCCESS;
-        }
-
-        HAL_Delay(1); // 短暂延时
-    }
-
-    return PH_ERR_IO_TIMEOUT;
-#else
-    phStatus_t  PH_MEMLOC_REM  statusTmp;
+    phStatus_t  PH_MEMLOC_REM statusTmp;
     uint32_t    PH_MEMLOC_REM dwLoadValue;	// 定时器加载值
     uint32_t    PH_MEMLOC_REM wPrescaler;	// 预分频值
     uint32_t    PH_MEMLOC_REM wFreq;		// 频率值
@@ -1087,7 +1056,6 @@ phStatus_t phhalHw_Pn5180_Wait(
     }
 
     return PH_ERR_SUCCESS;
-#endif
 }
 
 phStatus_t phhalHw_Pn5180_FieldReset(

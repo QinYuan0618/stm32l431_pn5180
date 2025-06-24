@@ -452,8 +452,8 @@ typedef enum {
 * This is an input parameter to \ref phacDiscLoop_Run.
 */
 typedef enum {
-    PHAC_DISCLOOP_ENTRY_POINT_POLL = 0,                               /**< Starts discovery loop in poll mode. */
-    PHAC_DISCLOOP_ENTRY_POINT_LISTEN                                  /**< Starts discovery loop in listen mode. */
+    PHAC_DISCLOOP_ENTRY_POINT_POLL = 0,     	// 主动轮询                          /**< Starts discovery loop in poll mode. */
+    PHAC_DISCLOOP_ENTRY_POINT_LISTEN            // 被动监听            /**< Starts discovery loop in listen mode. */
 }phacDiscLoop_Sw_EntryPoints_t;
 
 /**

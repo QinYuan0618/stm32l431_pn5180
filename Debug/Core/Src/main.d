@@ -32,11 +32,11 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Core/Inc/spi.h ../Core/Inc/main.h ../Core/Inc/tim.h \
  ../Core/Inc/usart.h ../Core/Inc/gpio.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/demo/NfcrdlibEx1_DiscoveryLoop/intfs/NfcrdlibEx1_DiscoveryLoop.h \
- E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phhalHw.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_Status.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_TypeDefs.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_NxpBuild.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_NxpBuild_Platform.h \
+ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phhalHw.h \
  ../Core/pn5180/portable/phOsal/inc/phOsal.h \
  ../Core/pn5180/portable/phOsal/inc/phOsal_Config.h \
  ../Core/pn5180/portable/phOsal/inc/../src/NullOs/phOsal_NullOs.h \
@@ -142,11 +142,11 @@ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Drivers/STM32L4xx_HAL_Driver/
 ../Core/Inc/usart.h:
 ../Core/Inc/gpio.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/demo/NfcrdlibEx1_DiscoveryLoop/intfs/NfcrdlibEx1_DiscoveryLoop.h:
-E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phhalHw.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_Status.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_TypeDefs.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_NxpBuild.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_NxpBuild_Platform.h:
+E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phhalHw.h:
 ../Core/pn5180/portable/phOsal/inc/phOsal.h:
 ../Core/pn5180/portable/phOsal/inc/phOsal_Config.h:
 ../Core/pn5180/portable/phOsal/inc/../src/NullOs/phOsal_NullOs.h:

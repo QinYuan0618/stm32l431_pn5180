@@ -53,12 +53,9 @@
 #include "phhalHw_Pn5180_Reg.h"
 #include "phhalHw_Pn5180_Instr.h"
 
+/* defines */
 #define PH_OSAL_NULLOS         1
-
-// 在编译选项或头文件中添加
-#define ENABLE_DISC_CONFIG
-
-// 确保支持你要测试的卡片类型
+#define ENABLE_DISC_CONFIG	// 1
 #define NXPBUILD__PHAC_DISCLOOP_TYPEA_TAGS  // 支持ISO14443A
 #define NXPBUILD__PHAC_DISCLOOP_TYPEV_TAGS  // 支持ISO15693
 /*******************************************************************************
@@ -109,8 +106,6 @@ static volatile uint8_t bInfLoop = 1U;
 void DiscoveryLoop_Demo(void  *pDataParams);
 uint16_t NFCForumProcess(uint16_t wEntryPoint, phStatus_t DiscLoopStatus);
 
-extern uint8_t str[];           //1
-
 #ifdef ENABLE_DISC_CONFIG
 static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile);
 #endif /* ENABLE_DISC_CONFIG */
@@ -133,7 +128,7 @@ int nfc_discovery_main(void)
         phOsal_ThreadObj_t DiscLoop;
 #endif /* PH_OSAL_NULLOS */
 
-        /* Perform Controller specific initialization. */
+        /* 1.CPU初始化：Perform Controller specific initialization. */
         phApp_CPU_Init();
 
         /* Perform OSAL Initialization. */
@@ -141,6 +136,7 @@ int nfc_discovery_main(void)
 
         DEBUG_PRINTF("\n DiscoveryLoop Example: \n");
 
+        /* 3.IC前端初始化 */
 #ifdef PH_PLATFORM_HAS_ICFRONTEND
         status = phbalReg_Init(&sBalParams, sizeof(phbalReg_Type_t));
         CHECK_STATUS(status);
@@ -150,21 +146,21 @@ int nfc_discovery_main(void)
         CHECK_NFCLIB_STATUS(dwStatus);
 #endif
 
-        /* Initialize library */
+        /* 4.初始化NFC库：Initialize library */
         dwStatus = phNfcLib_Init();
         CHECK_NFCLIB_STATUS(dwStatus);
         if(dwStatus != PH_NFCLIB_STATUS_SUCCESS) break;
 
-        /* Set the generic pointer */
-        pHal = phNfcLib_GetDataParams(PH_COMP_HAL);
-        pDiscLoop = phNfcLib_GetDataParams(PH_COMP_AC_DISCLOOP);
+        /* 5. 获取关键组件指针：Set the generic pointer */
+        pHal = phNfcLib_GetDataParams(PH_COMP_HAL);			// 硬件抽象层
+        pDiscLoop = phNfcLib_GetDataParams(PH_COMP_AC_DISCLOOP);	// Discovery Loop 组件
 
-        /* Initialize other components that are not initialized by NFCLIB and configure Discovery Loop. */
+        /* 6.初始化其他组件：Initialize other components that are not initialized by NFCLIB and configure Discovery Loop. */
         status = phApp_Comp_Init(pDiscLoop);
         CHECK_STATUS(status);
         if(status != PH_ERR_SUCCESS) break;
 
-        /* Perform Platform Init */
+        /* 7.配置中断：Perform Platform Init */
         status = phApp_Configure_IRQ();
         CHECK_STATUS(status);
         if(status != PH_ERR_SUCCESS) break;
@@ -181,6 +177,7 @@ int nfc_discovery_main(void)
 
         DEBUG_PRINTF("RTOS Error : Scheduler exited. \n");
 #else
+        /* 8.启动DiscoveryLoop主任务 */
         (void)DiscoveryLoop_Demo(pDiscLoop);
 #endif
     } while(0);
@@ -194,6 +191,7 @@ int nfc_discovery_main(void)
 * This function demonstrates the usage of discovery loop.
 * The discovery loop can run with default setting Or can be configured as demonstrated and
 * is used to detects and reports the NFC technology type.
+* 用于持续检测是否有NFC标签进入天线区域，并报告检测到的NFC技术类型
 * \param   pDataParams      The discovery loop data parameters
 * \note    This function will never return
 */
@@ -210,6 +208,7 @@ void DiscoveryLoop_Demo(void  *pDataParams)
 
     DEBUG_PRINTF("Entering Discovery Loop Demo...\r\n");
 
+/* 1.加载预设的配置profile, 根据bProfile是NFC Forum和EMVCo, 设置不同的发现策略（调制方式、协议栈使用）*/
 #ifdef ENABLE_DISC_CONFIG
 
 #ifndef ENABLE_EMVCO_PROF
@@ -221,35 +220,38 @@ void DiscoveryLoop_Demo(void  *pDataParams)
     LoadProfile(bProfile);
 #endif /* ENABLE_DISC_CONFIG */
 
-#ifdef NXPBUILD__PHHAL_HW_TARGET
+/* 确保初始化PN5180芯片用于监听模式的参数设置正确 */
+#ifdef NXPBUILD__PHHAL_HW_TARGET	// 启用了底层HAL硬件目标平台的支持(PN5180)
     /* Initialize the setting for Listen Mode */
     status = phApp_HALConfigAutoColl();
     CHECK_STATUS(status);
 #endif /* NXPBUILD__PHHAL_HW_TARGET */
 
-    /* Get Poll Configuration */
+    /* 2.获取当前的轮询技术支持（例如启用了14443A、15693等）Get Poll Configuration */
     status = phacDiscLoop_GetConfig(pDataParams, PHAC_DISCLOOP_CONFIG_PAS_POLL_TECH_CFG, &bSavePollTechCfg);
     CHECK_STATUS(status);
 
-    /* Start in poll mode */
+    /* 3.设置为轮询而不是监听 Start in poll mode */
     wEntryPoint = PHAC_DISCLOOP_ENTRY_POINT_POLL;
     status = PHAC_DISCLOOP_LPCD_NO_TECH_DETECTED;
 
-    /* Switch off RF field */
+    /* 4. 关闭射频场，准备进行新一轮发现（防止错误识别）Switch off RF field */
     statustmp = phhalHw_FieldOff(pHal);
     CHECK_STATUS(statustmp);
-    DEBUG_PRINTF("RF Field OFF status: 0x%04X\r\n", statustmp);
+//1    DEBUG_PRINTF("RF Field OFF status: 0x%04X\r\n", statustmp);
 
-    TestRFField();
+//1    TestRFField();
 
     while(1)
     {
     	DEBUG_PRINTF("Poll cycle start...\r\n");
 
-        /* Before polling set Discovery Poll State to Detection , as later in the code it can be changed to e.g. PHAC_DISCLOOP_POLL_STATE_REMOVAL*/
+        /* 每一次轮询开始前将轮询状态设为“检测中”，有些场景中如果上一次卡片未移除，需设置成“removal”状态
+         * Before polling set Discovery Poll State to Detection , as later in the code it can be changed to e.g. PHAC_DISCLOOP_POLL_STATE_REMOVAL*/
         statustmp = phacDiscLoop_SetConfig(pDataParams, PHAC_DISCLOOP_CONFIG_NEXT_POLL_STATE, PHAC_DISCLOOP_POLL_STATE_DETECTION);
         CHECK_STATUS(statustmp);
 
+        /* 可以选择是否启用LPCD（低功耗卡检测）*/
 #if !defined(ENABLE_EMVCO_PROF) && defined(PH_EXAMPLE1_LPCD_ENABLE)
 
 #ifdef NXPBUILD__PHHAL_HW_RC663
@@ -268,11 +270,11 @@ void DiscoveryLoop_Demo(void  *pDataParams)
         CHECK_STATUS(status);
 #endif /* PH_EXAMPLE1_LPCD_ENABLE*/
 
-        /* Start discovery loop */
-        /* PROGRAM BLOCK HERE!!! */
+        /* 启动轮询核心函数
+         * Start discovery loop */
+        /* PROGRAM BLOCK HERE at first, problem is solved */
         status = phacDiscLoop_Run(pDataParams, wEntryPoint);
-
-        /* 输出：0x4080  或者  0x4083 */
+        /* 输出：0x4080  或者  0x4083, 是否表示错误? 检测到卡返回0x408B */
         DEBUG_PRINTF("Discovery result: 0x%04X\r\n", status);
 
         if(bProfile == PHAC_DISCLOOP_PROFILE_EMVCO)
@@ -287,15 +289,15 @@ void DiscoveryLoop_Demo(void  *pDataParams)
         {
             wEntryPoint = NFCForumProcess(wEntryPoint, status);
 
-            /* Set Poll Configuration */
+            /* 恢复轮询设置 Set Poll Configuration */
             statustmp = phacDiscLoop_SetConfig(pDataParams, PHAC_DISCLOOP_CONFIG_PAS_POLL_TECH_CFG, bSavePollTechCfg);
             CHECK_STATUS(statustmp);
 
-            /* Switch off RF field */
+            /* 关闭RF场 Switch off RF field */
             statustmp = phhalHw_FieldOff(pHal);
             CHECK_STATUS(statustmp);
 
-            /* Wait for field-off time-out */
+            /* 等待场关闭完成 Wait for field-off time-out */
             statustmp = phhalHw_Wait(pHal, PHHAL_HW_TIME_MICROSECONDS, 5100);
             CHECK_STATUS(statustmp);	// error
 
@@ -305,6 +307,11 @@ void DiscoveryLoop_Demo(void  *pDataParams)
     }
 }
 
+/* 应用层主逻辑处理函数：
+ * 1.输出识别到的卡信息
+ * 2.执行冲突解决和卡激活
+ * 3.决定下一个入口点（轮询Poll 或 监听Listen）
+ */
 uint16_t NFCForumProcess(uint16_t wEntryPoint, phStatus_t DiscLoopStatus)
 {
     phStatus_t    status;
@@ -314,8 +321,10 @@ uint16_t NFCForumProcess(uint16_t wEntryPoint, phStatus_t DiscLoopStatus)
     uint8_t       bIndex;
     uint16_t      wReturnEntryPoint;
 
+    // 轮询POLL
     if(wEntryPoint == PHAC_DISCLOOP_ENTRY_POINT_POLL)
     {
+    	/* 1.检测到多个技术，选择其中一个，配置冲突解决状态，重新执行POLL */
         if((DiscLoopStatus & PH_ERR_MASK) == PHAC_DISCLOOP_MULTI_TECH_DETECTED)
         {
             DEBUG_PRINTF (" \n Multiple technology detected: \n");
@@ -367,6 +376,7 @@ uint16_t NFCForumProcess(uint16_t wEntryPoint, phStatus_t DiscLoopStatus)
             DiscLoopStatus = phacDiscLoop_Run(pDiscLoop, wEntryPoint);
         }
 
+        /* 2. 解决了多个设备，获取tag数量、技术类型，激活其中一个卡 */
         if((DiscLoopStatus & PH_ERR_MASK) == PHAC_DISCLOOP_MULTI_DEVICES_RESOLVED)
         {
             /* Get Detected Technology Type */
@@ -548,18 +558,21 @@ uint16_t NFCForumProcess(uint16_t wEntryPoint, phStatus_t DiscLoopStatus)
 #ifdef ENABLE_DISC_CONFIG
 /**
 * This function will load/configure Discovery loop with default values based on interested profile
- * Application can read these values from EEPROM area and load/configure Discovery loop via SetConfig
+* Application can read these values from EEPROM area and load/configure Discovery loop via SetConfig
+* 根据给定的NFC 配置 profile（如 NFC Forum 或 EMVCo）为 Discovery Loop 加载默认的轮询参数、通信协议支持位图、超时设置等
 * \param   bProfile      Reader Library Profile
 * \note    Values used below are default and is for demonstration purpose.
 */
 static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile)
 {
     phStatus_t status = PH_ERR_SUCCESS;
-    uint16_t   wPasPollConfig = 0;
-    uint16_t   wActPollConfig = 0;
-    uint16_t   wPasLisConfig = 0;
-    uint16_t   wActLisConfig = 0;
+    uint16_t   wPasPollConfig = 0;	// 被动轮询技术掩码（如TypeA/B/F/V）
+    uint16_t   wActPollConfig = 0;	// 主动轮询技术掩码（如P2P 106/212/424kbps）
+    uint16_t   wPasLisConfig = 0;	// 被动监听模式支持（当设备作为被动Tag）
+    uint16_t   wActLisConfig = 0;	// 主动监听模式支持（设备作为主动P2P目标）
 
+/* 1.通过一系列#ifdef宏, 构建这几个变量的位图. 即哪些协议被支持, 就把对应的bit位置为1 */
+/* 1.1 被动轮询技术掩码 */
 #ifdef NXPBUILD__PHAC_DISCLOOP_TYPEA_TAGS
     wPasPollConfig |= PHAC_DISCLOOP_POS_BIT_MASK_A;
 #endif
@@ -576,6 +589,7 @@ static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile)
     wPasPollConfig |= PHAC_DISCLOOP_POS_BIT_MASK_18000P3M3;
 #endif
 
+/* 1.2 主动轮询技术掩码 */
 #ifdef NXPBUILD__PHAC_DISCLOOP_TYPEA_P2P_ACTIVE
     wActPollConfig |= PHAC_DISCLOOP_ACT_POS_BIT_MASK_106;
 #endif
@@ -586,6 +600,7 @@ static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile)
     wActPollConfig |= PHAC_DISCLOOP_ACT_POS_BIT_MASK_424;
 #endif
 
+/* 1.3 被动监听模式支持 */
 #ifdef NXPBUILD__PHAC_DISCLOOP_TYPEA_TARGET_PASSIVE
     wPasLisConfig |= PHAC_DISCLOOP_POS_BIT_MASK_A;
 #endif
@@ -596,6 +611,7 @@ static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile)
     wPasLisConfig |= PHAC_DISCLOOP_POS_BIT_MASK_F424;
 #endif
 
+/* 1.4 主动监听模式支持 */
 #ifdef NXPBUILD__PHAC_DISCLOOP_TYPEA_TARGET_ACTIVE
     wActLisConfig |= PHAC_DISCLOOP_POS_BIT_MASK_A;
 #endif
@@ -606,6 +622,7 @@ static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile)
     wActLisConfig |= PHAC_DISCLOOP_POS_BIT_MASK_F424;
 #endif
 
+/* 2. 根据配置 Profile 加载对应参数 */
     if(bProfile == PHAC_DISCLOOP_PROFILE_NFC)
     {
         /* passive Bailout bitmap config. */
@@ -695,6 +712,7 @@ static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile)
         status = phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_OPE_MODE, RD_LIB_MODE_NFC);
         CHECK_STATUS(status);
     }
+    /* 对于EMVCo模式, 专用于支付终端POS, 配置更加严格, 通常只允许Type A/B协议, 不使用P2P、不启动主动监听 */
     else if(bProfile == PHAC_DISCLOOP_PROFILE_EMVCO)
     {
         /* EMVCO */
@@ -702,7 +720,7 @@ static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile)
         status = phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_BAIL_OUT, 0x00);
         CHECK_STATUS(status);
 
-        /* passive poll bitmap config. */
+        /* passive poll bitmap config.只启用TypeA/B */
         status = phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_PAS_POLL_TECH_CFG, (PHAC_DISCLOOP_POS_BIT_MASK_A | PHAC_DISCLOOP_POS_BIT_MASK_B));
         CHECK_STATUS(status);
 
@@ -718,7 +736,7 @@ static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile)
         status = phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_ACT_POLL_TECH_CFG, 0x00);
         CHECK_STATUS(status);
 
-        /* Bool to enable LPCD feature. */
+        /* Bool to enable LPCD feature. 禁用低功耗卡检测 */
         status = phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_ENABLE_LPCD, PH_OFF);
         CHECK_STATUS(status);
 
@@ -726,7 +744,7 @@ static phStatus_t LoadProfile(phacDiscLoop_Profile_t bProfile)
         status = phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_COLLISION_PENDING, PH_OFF);
         CHECK_STATUS(status);
 
-        /* whether anti-collision is supported or not. */
+        /* whether anti-collision is supported or not.启用防冲突 */
         status = phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_ANTI_COLL, PH_ON);
         CHECK_STATUS(status);
 

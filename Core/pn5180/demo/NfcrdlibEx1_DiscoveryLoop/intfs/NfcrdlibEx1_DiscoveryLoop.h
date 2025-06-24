@@ -18,7 +18,6 @@
 * $Revision: $ (v07.13.00)
 * $Date: $
 */
-
 // mian函数入口
 int nfc_discovery_main(void);
 
@@ -29,12 +28,13 @@ int nfc_discovery_main(void);
 
 #include <ph_Status.h>
 
+/* 不采用低功耗 */
 #if defined (NXPBUILD__PHHAL_HW_PN5180)   || \
     defined (NXPBUILD__PHHAL_HW_PN5190)   || \
     defined (NXPBUILD__PHHAL_HW_RC663)    || \
     defined (NXPBUILD__PHHAL_HW_PN7462AU) || \
     defined (NXPBUILD__PHHAL_HW_PN7642)
-        #define PH_EXAMPLE1_LPCD_ENABLE             /* If LPCD needs to be configured and used over HAL or over DiscLoop */
+//1        #define PH_EXAMPLE1_LPCD_ENABLE             /* If LPCD needs to be configured and used over HAL or over DiscLoop */
 #endif
 
 

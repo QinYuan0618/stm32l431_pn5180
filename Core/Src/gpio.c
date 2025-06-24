@@ -54,12 +54,12 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(PN5180_NSS_GPIO_Port, PN5180_NSS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(PN5180_RST_GPIO_Port, PN5180_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(PN5180_RST_GPIO_Port, PN5180_RST_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin : PN5180_BUSY_Pin */
   GPIO_InitStruct.Pin = PN5180_BUSY_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(PN5180_BUSY_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PN5180_NSS_Pin */

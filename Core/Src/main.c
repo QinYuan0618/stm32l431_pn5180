@@ -58,7 +58,6 @@
 /* USER CODE BEGIN PV */
 extern SPI_HandleTypeDef hspi3;
 extern TIM_HandleTypeDef htim6;  // 定时器句柄
-uint8_t str[20],str2[10];// 全局变量（你应该已经有类似的）
 
 extern phhalHw_Pn5180_DataParams_t *pHal;
 volatile uint8_t g_irq_flag = 0;  // 临时调试用

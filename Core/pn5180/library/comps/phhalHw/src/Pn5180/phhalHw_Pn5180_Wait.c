@@ -52,7 +52,7 @@ phStatus_t phhalHw_Pn5180_WaitIrq(
     phOsal_EventBits_t PH_MEMLOC_REM tReceivedEvents;
 
     // debug below----
-    printf("WaitIrq: bEnableIrq=0x%02X, dwIrqWaitFor=0x%08lX\n", bEnableIrq, dwIrqWaitFor);
+//    printf("WaitIrq: bEnableIrq=0x%02X, dwIrqWaitFor=0x%08lX\n", bEnableIrq, dwIrqWaitFor);
 
     // debug top----
 

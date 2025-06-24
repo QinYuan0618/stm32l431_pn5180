@@ -159,7 +159,7 @@ phStatus_t phDriver_TimerStart(phDriver_Timer_Unit_t eTimerUnit, uint32_t dwTime
 
 phStatus_t phDriver_TimerStop(void)
 {
-	 printf("NFC: Timer stop called (HAL_Delay mode - no action needed)\r\n");
+//	 printf("NFC: Timer stop called (HAL_Delay mode - no action needed)\r\n");
 
     return PH_DRIVER_SUCCESS;
 }

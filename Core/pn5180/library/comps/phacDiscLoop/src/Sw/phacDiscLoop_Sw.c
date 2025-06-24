@@ -258,6 +258,7 @@ phStatus_t phacDiscLoop_Sw_Init(
     return PH_ERR_SUCCESS;
 }
 
+// discoveryLoop的核心调度函数：根据入口点参数执行轮询（Poll）模式或监听（Listen）模式的标签发现流程
 phStatus_t phacDiscLoop_Sw_Run(
                                phacDiscLoop_Sw_DataParams_t * pDataParams,
                                uint8_t bEntryPoint
@@ -265,7 +266,7 @@ phStatus_t phacDiscLoop_Sw_Run(
 {
     phStatus_t PH_MEMLOC_REM wDiscloopStatus;
 
-    /* Disable Emd Check */
+    /* 关闭干扰检测 Disable Emd Check */
     PH_CHECK_SUCCESS_FCT(wDiscloopStatus, phhalHw_SetConfig(pDataParams->pHalDataParams, PHHAL_HW_CONFIG_SET_EMD, PH_OFF));
 
 #ifdef NXPBUILD__PHAC_DISCLOOP_TYPEA_JEWEL_TAGS
@@ -274,8 +275,10 @@ phStatus_t phacDiscLoop_Sw_Run(
 
     switch (bEntryPoint)
     {
+    /* 1.轮询入口 */
     case ((uint8_t)PHAC_DISCLOOP_ENTRY_POINT_POLL):
 
+		/* 低功耗卡检测LPCD */
 #ifdef NXPBUILD__PHAC_DISCLOOP_LPCD
         /* Perform LPCD if Enabled. */
         if ((0U != (pDataParams->bLpcdEnabled))
@@ -294,20 +297,27 @@ phStatus_t phacDiscLoop_Sw_Run(
         }
 #endif /* NXPBUILD__PHAC_DISCLOOP_LPCD */
 
-        /* Check for active poll configuration */
+        /* 1.1 主动轮询模式 Check for active poll configuration */
+    	// 如果当前设置了 Active Polling 模式，并且处于“轮询检测”的状态
         if((0U != (pDataParams->bActPollTechCfg))
            && (pDataParams->bPollState == PHAC_DISCLOOP_POLL_STATE_DETECTION))
         {
+        	/* 尝试使用不同速率（106/212/424 kbps）的NFC P2P主动通信模式与周围的目标设备建立连接
+            *  先关闭 RF 场地 -> 等待恢复时间 -> 设置协议速率 -> 开场 -> 发送 ATR 请求
+			*	-> 根据返回状态判断是否成功建立连接
+            */
             wDiscloopStatus = phacDiscLoop_Sw_Int_ActivePollMode(pDataParams);
             /* Continue with passive polling, if no peer detected */
             if((wDiscloopStatus & PH_ERR_MASK) != PHAC_DISCLOOP_NO_TECH_DETECTED)
             {
+            	// 失败
                 if(((wDiscloopStatus & PH_ERR_MASK) != PHAC_DISCLOOP_ACTIVE_TARGET_ACTIVATED) &&
                     ((wDiscloopStatus & PH_ERR_MASK) != PHAC_DISCLOOP_EXTERNAL_RFON))
                 {
                     pDataParams->wErrorCode = wDiscloopStatus;
                     return PH_ADD_COMPCODE_FIXED(PHAC_DISCLOOP_FAILURE, PH_COMP_AC_DISCLOOP);
                 }
+                // 成功
                 return wDiscloopStatus;
             }
             /* Field OFF after Active polling and wait for recovery time. */
@@ -315,7 +325,7 @@ phStatus_t phacDiscLoop_Sw_Run(
             PH_CHECK_SUCCESS_FCT(wDiscloopStatus, phhalHw_Wait(pDataParams->pHalDataParams, PHHAL_HW_TIME_MICROSECONDS, pDataParams->wActPollGTimeUs));
         }
 
-        /* Check for passive poll configuration */
+        /* 1.2 被动轮询模式 Check for passive poll configuration */
         if(0U != (pDataParams->bPasPollTechCfg))
         {
             /* Perform the Poll operation and store the Status code. */
@@ -336,6 +346,7 @@ phStatus_t phacDiscLoop_Sw_Run(
             return PH_ADD_COMPCODE_FIXED(PHAC_DISCLOOP_NO_TECH_DETECTED, PH_COMP_AC_DISCLOOP);
         }
 
+    /* 2. 监听模式 */
     case ((uint8_t)PHAC_DISCLOOP_ENTRY_POINT_LISTEN):
         /* Check for listen configurations */
         if ((0U != (pDataParams->bPasLisTechCfg)) || (0U != (pDataParams->bActLisTechCfg)))

@@ -432,6 +432,7 @@ phStatus_t phacDiscLoop_Sw_Int_PollMode(
 
     status = PH_ERR_INVALID_PARAMETER;
 
+    /* 技术检测阶段 */
     if(pDataParams->bPollState == PHAC_DISCLOOP_POLL_STATE_DETECTION)
     {
         if((pDataParams->bOpeMode == RD_LIB_MODE_NFC) ||
@@ -475,7 +476,7 @@ phStatus_t phacDiscLoop_Sw_Int_PollMode(
         }
     }
 
-    /* Go for collision resolution if single tech found */
+    /* 碰撞处理 Go for collision resolution if single tech found */
     if(pDataParams->bPollState == PHAC_DISCLOOP_POLL_STATE_COLLISION_RESOLUTION)
     {
         /* Get Technology to be resolved */
@@ -503,6 +504,8 @@ phStatus_t phacDiscLoop_Sw_Int_PollMode(
         /* Return if status is aborted. */
         PH_CHECK_ABORT(status);
     }
+
+    /* 移除检测 */
     if(pDataParams->bPollState == PHAC_DISCLOOP_POLL_STATE_REMOVAL)
     {
         if(pDataParams->bOpeMode == RD_LIB_MODE_EMVCO)
