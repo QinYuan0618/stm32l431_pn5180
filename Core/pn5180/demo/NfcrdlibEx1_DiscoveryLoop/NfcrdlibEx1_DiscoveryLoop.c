@@ -247,7 +247,7 @@ void DiscoveryLoop_Demo(void  *pDataParams)
     {
     	DEBUG_PRINTF("Poll cycle start...\r\n");
 
-        /* 每一次轮询开始前将轮询状态设为“检测中”，有些场景中如果上一次卡片未移除，需设置成“removal”状态
+        /* 每一次轮询开始前将轮询状态设为"检测中"，有些场景中如果上一次卡片未移除，需设置成"removal"状态
          * Before polling set Discovery Poll State to Detection , as later in the code it can be changed to e.g. PHAC_DISCLOOP_POLL_STATE_REMOVAL*/
         statustmp = phacDiscLoop_SetConfig(pDataParams, PHAC_DISCLOOP_CONFIG_NEXT_POLL_STATE, PHAC_DISCLOOP_POLL_STATE_DETECTION);
         CHECK_STATUS(statustmp);
@@ -278,12 +278,43 @@ void DiscoveryLoop_Demo(void  *pDataParams)
         /* 输出：0x4080  或者  0x4083, 是否表示错误? 检测到卡返回0x408B */
         DEBUG_PRINTF("Discovery result: 0x%04X\r\n", status);
 
+        /* ========== 🆕 EMV交易处理集成点 ========== */
+        if((status & PH_ERR_MASK) == PHAC_DISCLOOP_DEVICE_ACTIVATED)
+        {
+            DEBUG_PRINTF("Card activated, checking EMV compatibility\r\n");
+
+            /* 检查是否为EMV兼容卡片 */
+            if (EMV_IsEMVCompatibleCard(pDataParams))
+            {
+                DEBUG_PRINTF("=== EMV Compatible Card Detected, Starting Transaction ===\r\n");
+
+                /* 执行EMV交易流程 */
+//1                EMV_Result_t emv_result = EMV_ProcessTransaction(pDataParams, 1000, 0x0156); // 10.00元, CNY
+                EMV_Result_t emv_result = EMV_ProcessTransaction_Enhanced(pDataParams, 1000, 0x0156);
+
+                if (emv_result == EMV_SUCCESS) {
+                    DEBUG_PRINTF("=== EMV Transaction Completed Successfully ===\r\n");
+                } else {
+                    DEBUG_PRINTF("=== EMV Transaction Failed, Error Code: %d ===\r\n", emv_result);
+                }
+
+                /* 等待卡片移除后继续循环 */
+                EMV_WaitForCardRemoval(pDataParams);
+
+                /* 继续下一次轮询 */
+                continue;
+            }
+            else
+            {
+                DEBUG_PRINTF("Non-EMV card, using original processing flow\r\n");
+            }
+        }
+        /* ========== EMV交易处理集成点结束 ========== */
+
         if(bProfile == PHAC_DISCLOOP_PROFILE_EMVCO)
         {
 #if defined(ENABLE_EMVCO_PROF)
-
             EmvcoProfileProcess(pDataParams, status);
-
 #endif /* ENABLE_EMVCO_PROF */
         }
         else
@@ -302,8 +333,8 @@ void DiscoveryLoop_Demo(void  *pDataParams)
             statustmp = phhalHw_Wait(pHal, PHHAL_HW_TIME_MICROSECONDS, 5100);
             CHECK_STATUS(statustmp);	// error
 
-            DEBUG_PRINTF("Poll cycle complete, waiting...\r\n");  // 添加这行
-            HAL_Delay(1000);  // 添加1秒延时，方便观察
+            DEBUG_PRINTF("Poll cycle complete, waiting...\r\n");
+            HAL_Delay(1000);  // 1秒延时，方便观察
         }
     }
 }
@@ -853,3 +884,851 @@ void TestRFField(void)
 
     printf("=== RF FIELD TEST COMPLETE ===\n\n");
 }
+
+/**
+ * 检查是否为EMV兼容卡片
+ */
+uint8_t EMV_IsEMVCompatibleCard(void *pDataParams)
+{
+    phacDiscLoop_Sw_DataParams_t *pDiscLoop = (phacDiscLoop_Sw_DataParams_t *)pDataParams;
+
+    // 检查检测到的技术类型
+    uint16_t wTechDetected = 0;
+    phStatus_t status = phacDiscLoop_GetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_TECH_DETECTED, &wTechDetected);
+
+    if (status != PH_ERR_SUCCESS) {
+        return 0;
+    }
+
+    // 检查是否为Type A卡片
+    if (PHAC_DISCLOOP_CHECK_ANDMASK(wTechDetected, PHAC_DISCLOOP_POS_BIT_MASK_A)) {
+        // 检查是否支持ISO14443-4 (Type 4A)
+        uint8_t sak = pDiscLoop->sTypeATargetInfo.aTypeA_I3P3[0].aSak;
+
+        // SAK bit 5 = 1 表示支持ISO14443-4协议 (EMV所需)
+        if ((sak & 0x20) != 0) {
+        	DEBUG_PRINTF("Type A ISO14443-4 compatible card detected (SAK: 0x%02X)\r\n", sak);
+            return 1;
+        }
+    }
+
+    // 检查是否为Type B卡片 (也可能是EMV)
+    if (PHAC_DISCLOOP_CHECK_ANDMASK(wTechDetected, PHAC_DISCLOOP_POS_BIT_MASK_B)) {
+        DEBUG_PRINTF("Type B card detected\r\n");
+        return 1; // Type B默认支持ISO14443-4
+    }
+
+    return 0;
+}
+
+/**
+ * EMV交易处理主函数
+ */
+EMV_Result_t EMV_ProcessTransaction(void *pDataParams, uint32_t amount, uint16_t currency_code)
+{
+	// 使用增强版本的交易处理
+    return EMV_ProcessTransaction_Enhanced(pDataParams, amount, currency_code);
+
+#if 0
+    phacDiscLoop_Sw_DataParams_t *pDiscLoop = (phacDiscLoop_Sw_DataParams_t *)pDataParams;
+
+    DEBUG_PRINTF("=== Starting EMV Transaction Process ===\r\n");
+    DEBUG_PRINTF("Transaction Amount: %lu.%02lu CNY\r\n", amount/100, amount%100);
+
+    EMV_Result_t result = EMV_SUCCESS;
+
+    do {
+        // 步骤1: 选择PPSE (Proximity Payment System Environment)
+        DEBUG_PRINTF("Step 1: Select PPSE\r\n");
+        result = EMV_SelectPPSE();
+        if (result != EMV_SUCCESS) {
+            DEBUG_PRINTF("PPSE Selection Failed\r\n");
+            break;
+        }
+        DEBUG_PRINTF("PPSE Selection Successful\r\n");
+
+        // 步骤2: 应用选择 (简化版本)
+        DEBUG_PRINTF("Step 2: Try to Select masterCard Application\r\n");
+
+        uint8_t mastercard_aid[] = {0xA0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10}; // MasterCard AID
+        result = EMV_SelectApplication(mastercard_aid, sizeof(mastercard_aid));
+        if (result != EMV_SUCCESS)
+        {
+            // Try Visa
+            DEBUG_PRINTF("Try to Select Visa Application\r\n");
+            uint8_t visa_aid[] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10};
+            result = EMV_SelectApplication(visa_aid, sizeof(visa_aid));
+            if (result != EMV_SUCCESS) {
+                // Try UnionPay
+                DEBUG_PRINTF("Try to Select UnionPay Application\r\n");
+                uint8_t unionpay_aid[] = {0xA0, 0x00, 0x00, 0x03, 0x33, 0x01, 0x01};
+                result = EMV_SelectApplication(unionpay_aid, sizeof(unionpay_aid));
+                if (result != EMV_SUCCESS) {
+                    DEBUG_PRINTF("Application Selection Failed\r\n");
+                    break;
+                }
+            }
+        }
+        DEBUG_PRINTF("Application Selection Successful\r\n");
+
+        // 步骤3: 获取处理选项 (Get Processing Options)
+        DEBUG_PRINTF("Step 3: Get Processing Options\r\n");
+        result = EMV_GetProcessingOptions(amount, currency_code);
+        if (result != EMV_SUCCESS) {
+            DEBUG_PRINTF("GPO Failed\r\n");
+            break;
+        }
+        DEBUG_PRINTF("GPO Successful\r\n");
+
+        // 步骤4: 读取应用数据
+        DEBUG_PRINTF("Step 4: Read Application Data\r\n");
+        result = EMV_ReadApplicationData();
+        if (result != EMV_SUCCESS) {
+            DEBUG_PRINTF("Read Application Data Failed\r\n");
+            break;
+        }
+        DEBUG_PRINTF("Read Application Data Successful\r\n");
+
+        // 步骤5: 发送数据到Linux端进行后续处理
+        DEBUG_PRINTF("Step 5: Send Transaction Data to Linux\r\n");
+        if (EMV_SendDataToLinux(amount, currency_code) != 0) {
+            result = EMV_ERROR_COMMUNICATION;
+            DEBUG_PRINTF("Communication with Linux Failed\r\n");
+            break;
+        }
+        DEBUG_PRINTF("Data Sent Successfully\r\n");
+
+        result = EMV_SUCCESS;
+
+    } while(0);
+
+    if (result == EMV_SUCCESS) {
+        DEBUG_PRINTF("=== EMV Transaction Process Completed ===\r\n");
+    } else {
+        DEBUG_PRINTF("=== EMV Transaction Process Failed, Error Code: %d ===\r\n", result);
+    }
+
+    return result;
+#endif
+}
+
+// ==================================================
+// 修改2: 重写EMV交易处理函数 - 专注数据收集
+// ==================================================
+EMV_Result_t EMV_ProcessTransaction_Enhanced(void *pDataParams, uint32_t amount, uint16_t currency_code)
+{
+    phacDiscLoop_Sw_DataParams_t *pDiscLoop = (phacDiscLoop_Sw_DataParams_t *)pDataParams;
+    EMV_Complete_Card_Data_t card_data;
+    memset(&card_data, 0, sizeof(card_data));
+
+    DEBUG_PRINTF("=== Starting Enhanced EMV Data Collection ===\r\n");
+    DEBUG_PRINTF("Transaction Amount: %lu.%02lu CNY\r\n", amount/100, amount%100);
+
+    // 设置交易参数
+    card_data.amount = amount;
+    card_data.currency_code = currency_code;
+    card_data.transaction_type = 0x00; // 商品/服务交易
+
+    EMV_Result_t result = EMV_SUCCESS;
+
+    do {
+        // 步骤1: 收集卡片基础信息
+        DEBUG_PRINTF("Step 1: Collect Card Basic Info\r\n");
+        result = EMV_CollectCardBasicInfo(pDiscLoop, &card_data);
+        if (result != EMV_SUCCESS) {
+            DEBUG_PRINTF("Failed to collect card basic info\r\n");
+            break;
+        }
+
+        // 步骤2: 收集PPSE信息
+        DEBUG_PRINTF("Step 2: Collect PPSE Information\r\n");
+        result = EMV_CollectPPSEInfo(&card_data);
+        if (result != EMV_SUCCESS) {
+            DEBUG_PRINTF("PPSE collection failed\r\n");
+            break;
+        }
+
+        // 步骤3: 收集应用选择信息
+        DEBUG_PRINTF("Step 3: Collect Application Selection Info\r\n");
+        result = EMV_CollectApplicationInfo(&card_data);
+        if (result != EMV_SUCCESS) {
+            DEBUG_PRINTF("Application selection failed\r\n");
+            break;
+        }
+
+        // 步骤4: 收集GPO信息
+        DEBUG_PRINTF("Step 4: Collect GPO Information\r\n");
+        result = EMV_CollectGPOInfo(&card_data);
+        if (result != EMV_SUCCESS) {
+            DEBUG_PRINTF("GPO collection failed\r\n");
+            break;
+        }
+
+        // 步骤5: 收集所有应用记录
+        DEBUG_PRINTF("Step 5: Collect All Application Records\r\n");
+        result = EMV_CollectAllRecords(&card_data);
+        if (result != EMV_SUCCESS) {
+            DEBUG_PRINTF("Record collection failed\r\n");
+            break;
+        }
+
+        // 步骤6: 发送完整数据到Linux处理
+        DEBUG_PRINTF("Step 6: Send Complete Data to Linux\r\n");
+        result = EMV_SendCompleteDataToLinux(&card_data);
+        if (result != EMV_SUCCESS) {
+            DEBUG_PRINTF("Data transmission failed\r\n");
+            break;
+        }
+
+        // 步骤7: 等待Linux处理结果
+        DEBUG_PRINTF("Step 7: Wait for Linux Processing Result\r\n");
+        result = EMV_WaitForLinuxResult(&card_data);
+        if (result != EMV_SUCCESS) {
+            DEBUG_PRINTF("Linux processing failed\r\n");
+            break;
+        }
+
+        result = EMV_SUCCESS;
+
+    } while(0);
+
+    // 显示最终结果
+    if (result == EMV_SUCCESS) {
+        DEBUG_PRINTF("=== EMV Transaction Completed Successfully ===\r\n");
+        EMV_ShowSuccessIndication();
+    } else {
+        DEBUG_PRINTF("=== EMV Transaction Failed, Error Code: %d ===\r\n", result);
+        EMV_ShowFailureIndication();
+    }
+
+    return result;
+}
+
+
+/**
+ * Select PPSE
+ */
+EMV_Result_t EMV_SelectPPSE(void)
+{
+    // Use your existing PPSE command
+    uint8_t PPSE_SELECT_APDU[] = {
+        0x00, 0xA4, 0x04, 0x00, 0x0E,
+        0x32, 0x50, 0x41, 0x59, 0x2E, 0x53, 0x59, 0x53, 0x2E, 0x44, 0x44, 0x46, 0x30, 0x31,
+        0x00
+    };
+
+    phStatus_t status;
+    uint8_t *ppRxBuffer;
+    uint16_t wRxLen = 0;
+
+    // Use ISO14443-4 protocol to exchange APDU
+    status = phpalI14443p4_Exchange(
+        phNfcLib_GetDataParams(PH_COMP_PAL_ISO14443P4),
+        PH_EXCHANGE_DEFAULT,
+        PPSE_SELECT_APDU,
+        sizeof(PPSE_SELECT_APDU),
+        &ppRxBuffer,
+        &wRxLen
+    );
+
+    if (status == PH_ERR_SUCCESS && wRxLen >= 2) {
+        // Check status word (SW1 SW2)
+        uint8_t sw1 = ppRxBuffer[wRxLen-2];
+        uint8_t sw2 = ppRxBuffer[wRxLen-1];
+
+        DEBUG_PRINTF("PPSE Response Status: %02X %02X, Length: %d\r\n", sw1, sw2, wRxLen);
+
+        if (sw1 == 0x90 && sw2 == 0x00) {
+            // Print response data (for debugging)
+            DEBUG_PRINTF("PPSE Response Data: ");
+            for (int i = 0; i < wRxLen-2 && i < 50; i++) { // Limit print length
+                printf("%02X ", ppRxBuffer[i]);
+            }
+            printf("\r\n");
+
+            return EMV_SUCCESS;
+        } else if (sw1 == 0x6A && sw2 == 0x82) {
+            DEBUG_PRINTF("PPSE Not Found (6A82)\r\n");
+        }
+    } else {
+        DEBUG_PRINTF("PPSE Communication Failed, Status: 0x%04X\r\n", status);
+    }
+
+    return EMV_ERROR_PPSE_SELECT;
+}
+
+/**
+ * Select Application
+ */
+EMV_Result_t EMV_SelectApplication(uint8_t *aid, uint8_t aid_len)
+{
+    uint8_t select_apdu[256];
+    uint8_t apdu_len = 0;
+
+    // Build SELECT APPLICATION APDU
+    select_apdu[apdu_len++] = 0x00;  // CLA
+    select_apdu[apdu_len++] = 0xA4;  // INS (SELECT)
+    select_apdu[apdu_len++] = 0x04;  // P1 (Select by DF name)
+    select_apdu[apdu_len++] = 0x00;  // P2
+    select_apdu[apdu_len++] = aid_len; // LC
+
+    memcpy(&select_apdu[apdu_len], aid, aid_len);
+    apdu_len += aid_len;
+
+    select_apdu[apdu_len++] = 0x00;  // LE
+
+    phStatus_t status;
+    uint8_t *ppRxBuffer;
+    uint16_t wRxLen = 0;
+
+    status = phpalI14443p4_Exchange(
+        phNfcLib_GetDataParams(PH_COMP_PAL_ISO14443P4),
+        PH_EXCHANGE_DEFAULT,
+        select_apdu,
+        apdu_len,
+        &ppRxBuffer,
+        &wRxLen
+    );
+
+    if (status == PH_ERR_SUCCESS && wRxLen >= 2) {
+        uint8_t sw1 = ppRxBuffer[wRxLen-2];
+        uint8_t sw2 = ppRxBuffer[wRxLen-1];
+
+        DEBUG_PRINTF("Application Selection Response: %02X %02X\r\n", sw1, sw2);
+
+        if (sw1 == 0x90 && sw2 == 0x00) {
+            return EMV_SUCCESS;
+        }
+    }
+
+    return EMV_ERROR_APP_SELECT;
+}
+
+/**
+ * Get Processing Options
+ */
+EMV_Result_t EMV_GetProcessingOptions(uint32_t amount, uint16_t currency_code)
+{
+    uint8_t gpo_apdu[256];
+    uint8_t apdu_len = 0;
+
+    // Build GPO APDU (simplified version)
+    gpo_apdu[apdu_len++] = 0x80;  // CLA
+    gpo_apdu[apdu_len++] = 0xA8;  // INS (GET PROCESSING OPTIONS)
+    gpo_apdu[apdu_len++] = 0x00;  // P1
+    gpo_apdu[apdu_len++] = 0x00;  // P2
+    gpo_apdu[apdu_len++] = 0x02;  // LC (simplified version, only send basic data)
+
+    // Simple PDOL data
+    gpo_apdu[apdu_len++] = 0x83;  // Tag
+    gpo_apdu[apdu_len++] = 0x00;  // Length (empty data)
+
+    gpo_apdu[apdu_len++] = 0x00;  // LE
+
+    phStatus_t status;
+    uint8_t *ppRxBuffer;
+    uint16_t wRxLen = 0;
+
+    status = phpalI14443p4_Exchange(
+        phNfcLib_GetDataParams(PH_COMP_PAL_ISO14443P4),
+        PH_EXCHANGE_DEFAULT,
+        gpo_apdu,
+        apdu_len,
+        &ppRxBuffer,
+        &wRxLen
+    );
+
+    if (status == PH_ERR_SUCCESS && wRxLen >= 2) {
+        uint8_t sw1 = ppRxBuffer[wRxLen-2];
+        uint8_t sw2 = ppRxBuffer[wRxLen-1];
+
+        DEBUG_PRINTF("GPO Response: %02X %02X\r\n", sw1, sw2);
+
+        if (sw1 == 0x90 && sw2 == 0x00) {
+            return EMV_SUCCESS;
+        }
+    }
+
+    return EMV_ERROR_GPO;
+}
+
+/**
+ * Read Application Data
+ */
+EMV_Result_t EMV_ReadApplicationData(void)
+{
+    // Try to read several common records
+    uint8_t records_to_read[][2] = {
+        {0x01, 0x01}, // SFI 1, Record 1
+        {0x02, 0x01}, // SFI 2, Record 1
+        {0x01, 0x02}, // SFI 1, Record 2
+    };
+
+    int successful_reads = 0;
+
+    for (int i = 0; i < sizeof(records_to_read) / sizeof(records_to_read[0]); i++) {
+        uint8_t sfi = records_to_read[i][0];
+        uint8_t record = records_to_read[i][1];
+
+        if (EMV_ReadRecord(sfi, record) == EMV_SUCCESS) {
+            successful_reads++;
+        }
+    }
+
+    if (successful_reads > 0) {
+        DEBUG_PRINTF("Successfully read %d records\r\n", successful_reads);
+        return EMV_SUCCESS;
+    }
+
+    return EMV_ERROR_READ_RECORD;
+}
+
+/**
+ * Read single record
+ */
+EMV_Result_t EMV_ReadRecord(uint8_t sfi, uint8_t record_num)
+{
+    uint8_t read_record_apdu[5];
+
+    read_record_apdu[0] = 0x00;  // CLA
+    read_record_apdu[1] = 0xB2;  // INS (READ RECORD)
+    read_record_apdu[2] = record_num; // P1
+    read_record_apdu[3] = (sfi << 3) | 0x04; // P2
+    read_record_apdu[4] = 0x00;  // LE
+
+    phStatus_t status;
+    uint8_t *ppRxBuffer;
+    uint16_t wRxLen = 0;
+
+    status = phpalI14443p4_Exchange(
+        phNfcLib_GetDataParams(PH_COMP_PAL_ISO14443P4),
+        PH_EXCHANGE_DEFAULT,
+        read_record_apdu,
+        sizeof(read_record_apdu),
+        &ppRxBuffer,
+        &wRxLen
+    );
+
+    if (status == PH_ERR_SUCCESS && wRxLen >= 2) {
+        uint8_t sw1 = ppRxBuffer[wRxLen-2];
+        uint8_t sw2 = ppRxBuffer[wRxLen-1];
+
+        if (sw1 == 0x90 && sw2 == 0x00) {
+            DEBUG_PRINTF("SFI %d Record %d read successful, Length: %d\r\n", sfi, record_num, wRxLen-2);
+            return EMV_SUCCESS;
+        } else {
+            DEBUG_PRINTF("SFI %d Record %d not found (%02X %02X)\r\n", sfi, record_num, sw1, sw2);
+        }
+    }
+
+    return EMV_ERROR_READ_RECORD;
+}
+
+/**
+ * Send data to Linux
+ */
+int EMV_SendDataToLinux(uint32_t amount, uint16_t currency_code)
+{
+    // Simplified version: Send transaction data to Linux via UART
+    char tx_buffer[256];
+    int len = snprintf(tx_buffer, sizeof(tx_buffer),
+        "EMV_TRANSACTION:AMOUNT=%lu,CURRENCY=%04X\r\n",
+        amount, currency_code);
+
+    // Assume using UART1 to communicate with Linux
+    extern UART_HandleTypeDef huart1;
+    HAL_StatusTypeDef uart_status = HAL_UART_Transmit(&huart1, (uint8_t*)tx_buffer, len, 1000);
+
+    if (uart_status == HAL_OK) {
+        DEBUG_PRINTF("Sent to Linux: %s", tx_buffer);
+        return 0;
+    } else {
+        DEBUG_PRINTF("UART transmission failed\r\n");
+        return -1;
+    }
+}
+
+/**
+ * Wait for card removal
+ */
+void EMV_WaitForCardRemoval(void *pDataParams)
+{
+    phacDiscLoop_Sw_DataParams_t *pDiscLoop = (phacDiscLoop_Sw_DataParams_t *)pDataParams;
+
+    DEBUG_PRINTF("Please remove the card...\r\n");
+
+    // Set to card removal detection mode
+    phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_NEXT_POLL_STATE, PHAC_DISCLOOP_POLL_STATE_REMOVAL);
+
+    // Run removal detection
+    phStatus_t status;
+    int removal_attempts = 0;
+    do {
+        status = phacDiscLoop_Run(pDiscLoop, PHAC_DISCLOOP_ENTRY_POINT_POLL);
+        HAL_Delay(100);
+        removal_attempts++;
+
+        // Avoid infinite waiting
+        if (removal_attempts > 100) { // 10 seconds timeout
+            DEBUG_PRINTF("Card removal detection timeout\r\n");
+            break;
+        }
+    } while ((status & PH_ERR_MASK) != PHAC_DISCLOOP_NO_TECH_DETECTED);
+
+    DEBUG_PRINTF("Card removed\r\n");
+
+    // Reset to detection mode, prepare for next polling
+    phacDiscLoop_SetConfig(pDiscLoop, PHAC_DISCLOOP_CONFIG_NEXT_POLL_STATE, PHAC_DISCLOOP_POLL_STATE_DETECTION);
+}
+
+// ==================================================
+// 新增功能1: 收集卡片基础信息
+// ==================================================
+EMV_Result_t EMV_CollectCardBasicInfo(phacDiscLoop_Sw_DataParams_t *pDiscLoop, EMV_Complete_Card_Data_t *card_data)
+{
+    // 收集UID
+    if (pDiscLoop->sTypeATargetInfo.bTotalTagsFound > 0) {
+        card_data->card_uid_len = pDiscLoop->sTypeATargetInfo.aTypeA_I3P3[0].bUidSize;
+        memcpy(card_data->card_uid,
+               pDiscLoop->sTypeATargetInfo.aTypeA_I3P3[0].aUid,
+               card_data->card_uid_len);
+
+        card_data->card_sak = pDiscLoop->sTypeATargetInfo.aTypeA_I3P3[0].aSak;
+        memcpy(card_data->card_atqa,
+               pDiscLoop->sTypeATargetInfo.aTypeA_I3P3[0].aAtqa,
+               2);
+
+        DEBUG_PRINTF("Card UID: ");
+        for (int i = 0; i < card_data->card_uid_len; i++) {
+            printf("%02X ", card_data->card_uid[i]);
+        }
+        printf("\r\n");
+        DEBUG_PRINTF("SAK: 0x%02X, ATQA: %02X %02X\r\n",
+                     card_data->card_sak, card_data->card_atqa[0], card_data->card_atqa[1]);
+
+        return EMV_SUCCESS;
+    }
+
+    return EMV_ERROR_CARD_NOT_EMV;
+}
+
+// ==================================================
+// 新增功能2: 收集PPSE信息
+// ==================================================
+EMV_Result_t EMV_CollectPPSEInfo(EMV_Complete_Card_Data_t *card_data)
+{
+    uint8_t PPSE_SELECT_APDU[] = {
+        0x00, 0xA4, 0x04, 0x00, 0x0E,
+        0x32, 0x50, 0x41, 0x59, 0x2E, 0x53, 0x59, 0x53, 0x2E, 0x44, 0x44, 0x46, 0x30, 0x31,
+        0x00
+    };
+
+    phStatus_t status;
+    uint8_t *ppRxBuffer;
+    uint16_t wRxLen = 0;
+
+    status = phpalI14443p4_Exchange(
+        phNfcLib_GetDataParams(PH_COMP_PAL_ISO14443P4),
+        PH_EXCHANGE_DEFAULT,
+        PPSE_SELECT_APDU,
+        sizeof(PPSE_SELECT_APDU),
+        &ppRxBuffer,
+        &wRxLen
+    );
+
+    if (status == PH_ERR_SUCCESS && wRxLen >= 2) {
+        uint8_t sw1 = ppRxBuffer[wRxLen-2];
+        uint8_t sw2 = ppRxBuffer[wRxLen-1];
+
+        if (sw1 == 0x90 && sw2 == 0x00) {
+            // 保存完整PPSE响应数据
+            card_data->ppse_len = wRxLen;
+            memcpy(card_data->ppse_data, ppRxBuffer, wRxLen);
+
+            DEBUG_PRINTF("PPSE collected: %d bytes\r\n", wRxLen);
+            return EMV_SUCCESS;
+        }
+    }
+
+    // PPSE失败不是致命错误，可能是老卡
+    DEBUG_PRINTF("PPSE not available, continuing...\r\n");
+    card_data->ppse_len = 0;
+    return EMV_SUCCESS;
+}
+
+// ==================================================
+// 新增功能3: 收集应用选择信息
+// ==================================================
+EMV_Result_t EMV_CollectApplicationInfo(EMV_Complete_Card_Data_t *card_data)
+{
+    // 尝试多个常见AID
+    uint8_t aids[][16] = {
+        {0xA0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10}, // MasterCard (7字节)
+        {0xA0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10}, // Visa (7字节)
+        {0xA0, 0x00, 0x00, 0x03, 0x33, 0x01, 0x01}, // UnionPay (7字节)
+    };
+    uint8_t aid_lens[] = {7, 7, 7};
+    const char* aid_names[] = {"MasterCard", "Visa", "UnionPay"};
+
+    for (int i = 0; i < 3; i++) {
+        DEBUG_PRINTF("Trying %s AID...\r\n", aid_names[i]);
+
+        uint8_t select_apdu[32];
+        uint8_t apdu_len = 0;
+
+        select_apdu[apdu_len++] = 0x00;  // CLA
+        select_apdu[apdu_len++] = 0xA4;  // INS
+        select_apdu[apdu_len++] = 0x04;  // P1
+        select_apdu[apdu_len++] = 0x00;  // P2
+        select_apdu[apdu_len++] = aid_lens[i]; // LC
+
+        memcpy(&select_apdu[apdu_len], aids[i], aid_lens[i]);
+        apdu_len += aid_lens[i];
+        select_apdu[apdu_len++] = 0x00;  // LE
+
+        phStatus_t status;
+        uint8_t *ppRxBuffer;
+        uint16_t wRxLen = 0;
+
+        status = phpalI14443p4_Exchange(
+            phNfcLib_GetDataParams(PH_COMP_PAL_ISO14443P4),
+            PH_EXCHANGE_DEFAULT,
+            select_apdu, apdu_len,
+            &ppRxBuffer, &wRxLen
+        );
+
+        if (status == PH_ERR_SUCCESS && wRxLen >= 2) {
+            uint8_t sw1 = ppRxBuffer[wRxLen-2];
+            uint8_t sw2 = ppRxBuffer[wRxLen-1];
+
+            if (sw1 == 0x90 && sw2 == 0x00) {
+                // 成功选择应用，保存响应数据
+                card_data->app_select_len = wRxLen;
+                memcpy(card_data->app_select_data, ppRxBuffer, wRxLen);
+
+                DEBUG_PRINTF("%s application selected: %d bytes\r\n", aid_names[i], wRxLen);
+                return EMV_SUCCESS;
+            }
+        }
+    }
+
+    return EMV_ERROR_APP_SELECT;
+}
+
+// ==================================================
+// 新增功能4: 收集GPO信息
+// ==================================================
+EMV_Result_t EMV_CollectGPOInfo(EMV_Complete_Card_Data_t *card_data)
+{
+    uint8_t gpo_apdu[] = {
+        0x80, 0xA8, 0x00, 0x00, 0x02, 0x83, 0x00, 0x00
+    };
+
+    phStatus_t status;
+    uint8_t *ppRxBuffer;
+    uint16_t wRxLen = 0;
+
+    status = phpalI14443p4_Exchange(
+        phNfcLib_GetDataParams(PH_COMP_PAL_ISO14443P4),
+        PH_EXCHANGE_DEFAULT,
+        gpo_apdu, sizeof(gpo_apdu),
+        &ppRxBuffer, &wRxLen
+    );
+
+    if (status == PH_ERR_SUCCESS && wRxLen >= 2) {
+        uint8_t sw1 = ppRxBuffer[wRxLen-2];
+        uint8_t sw2 = ppRxBuffer[wRxLen-1];
+
+        if (sw1 == 0x90 && sw2 == 0x00) {
+            card_data->gpo_len = wRxLen;
+            memcpy(card_data->gpo_data, ppRxBuffer, wRxLen);
+
+            DEBUG_PRINTF("GPO collected: %d bytes\r\n", wRxLen);
+            return EMV_SUCCESS;
+        }
+    }
+
+    return EMV_ERROR_GPO;
+}
+
+// ==================================================
+// 新增功能5: 收集所有记录
+// ==================================================
+EMV_Result_t EMV_CollectAllRecords(EMV_Complete_Card_Data_t *card_data)
+{
+    // 尝试读取常见的SFI记录
+    uint8_t sfi_list[] = {1, 2, 3, 4};
+    uint8_t max_records_per_sfi = 5;
+
+    card_data->sfi_record_count = 0;
+
+    for (int sfi_idx = 0; sfi_idx < sizeof(sfi_list); sfi_idx++) {
+        uint8_t sfi = sfi_list[sfi_idx];
+
+        for (uint8_t record = 1; record <= max_records_per_sfi; record++) {
+            uint8_t read_record_apdu[5] = {
+                0x00, 0xB2, record, (sfi << 3) | 0x04, 0x00
+            };
+
+            phStatus_t status;
+            uint8_t *ppRxBuffer;
+            uint16_t wRxLen = 0;
+
+            status = phpalI14443p4_Exchange(
+                phNfcLib_GetDataParams(PH_COMP_PAL_ISO14443P4),
+                PH_EXCHANGE_DEFAULT,
+                read_record_apdu, sizeof(read_record_apdu),
+                &ppRxBuffer, &wRxLen
+            );
+
+            if (status == PH_ERR_SUCCESS && wRxLen >= 2) {
+                uint8_t sw1 = ppRxBuffer[wRxLen-2];
+                uint8_t sw2 = ppRxBuffer[wRxLen-1];
+
+                if (sw1 == 0x90 && sw2 == 0x00) {
+                    // 成功读取记录
+                    if (card_data->sfi_record_count < 10) {
+                        card_data->sfi_record_lens[card_data->sfi_record_count] = wRxLen;
+                        memcpy(card_data->sfi_records[card_data->sfi_record_count],
+                               ppRxBuffer, wRxLen);
+                        card_data->sfi_record_count++;
+
+                        DEBUG_PRINTF("SFI %d Record %d: %d bytes\r\n", sfi, record, wRxLen-2);
+                    }
+                } else {
+                    // 记录不存在，尝试下一个
+                    break;
+                }
+            }
+        }
+    }
+
+    if (card_data->sfi_record_count > 0) {
+        DEBUG_PRINTF("Total records collected: %d\r\n", card_data->sfi_record_count);
+        return EMV_SUCCESS;
+    }
+
+    return EMV_ERROR_READ_RECORD;
+}
+
+// ==================================================
+// 新增功能6: 发送完整数据到Linux
+// ==================================================
+EMV_Result_t EMV_SendCompleteDataToLinux(EMV_Complete_Card_Data_t *card_data)
+{
+    extern UART_HandleTypeDef huart1;
+    char buffer[2048];
+    int pos = 0;
+
+    // 构建结构化数据包
+    pos += sprintf(buffer + pos, "EMV_COMPLETE_DATA_START\r\n");
+
+    // 基础卡片信息
+    pos += sprintf(buffer + pos, "CARD_UID:");
+    for (int i = 0; i < card_data->card_uid_len; i++) {
+        pos += sprintf(buffer + pos, "%02X", card_data->card_uid[i]);
+    }
+    pos += sprintf(buffer + pos, "\r\n");
+
+    pos += sprintf(buffer + pos, "CARD_SAK:%02X\r\n", card_data->card_sak);
+    pos += sprintf(buffer + pos, "CARD_ATQA:%02X%02X\r\n",
+                   card_data->card_atqa[0], card_data->card_atqa[1]);
+
+    // 交易参数
+    pos += sprintf(buffer + pos, "AMOUNT:%lu\r\n", card_data->amount);
+    pos += sprintf(buffer + pos, "CURRENCY:%04X\r\n", card_data->currency_code);
+
+    // PPSE数据
+    if (card_data->ppse_len > 0) {
+        pos += sprintf(buffer + pos, "PPSE_DATA:");
+        for (int i = 0; i < card_data->ppse_len; i++) {
+            pos += sprintf(buffer + pos, "%02X", card_data->ppse_data[i]);
+        }
+        pos += sprintf(buffer + pos, "\r\n");
+    }
+
+    // 应用选择数据
+    if (card_data->app_select_len > 0) {
+        pos += sprintf(buffer + pos, "APP_SELECT_DATA:");
+        for (int i = 0; i < card_data->app_select_len; i++) {
+            pos += sprintf(buffer + pos, "%02X", card_data->app_select_data[i]);
+        }
+        pos += sprintf(buffer + pos, "\r\n");
+    }
+
+    // GPO数据
+    if (card_data->gpo_len > 0) {
+        pos += sprintf(buffer + pos, "GPO_DATA:");
+        for (int i = 0; i < card_data->gpo_len; i++) {
+            pos += sprintf(buffer + pos, "%02X", card_data->gpo_data[i]);
+        }
+        pos += sprintf(buffer + pos, "\r\n");
+    }
+
+    // 记录数据
+    pos += sprintf(buffer + pos, "RECORD_COUNT:%d\r\n", card_data->sfi_record_count);
+    for (int i = 0; i < card_data->sfi_record_count; i++) {
+        pos += sprintf(buffer + pos, "RECORD_%d:", i);
+        for (int j = 0; j < card_data->sfi_record_lens[i]; j++) {
+            pos += sprintf(buffer + pos, "%02X", card_data->sfi_records[i][j]);
+        }
+        pos += sprintf(buffer + pos, "\r\n");
+    }
+
+    pos += sprintf(buffer + pos, "EMV_COMPLETE_DATA_END\r\n");
+
+    // 发送数据
+    if (HAL_UART_Transmit(&huart1, (uint8_t*)buffer, pos, 5000) == HAL_OK) {
+        DEBUG_PRINTF("Complete data sent to Linux: %d bytes\r\n", pos);
+        return EMV_SUCCESS;
+    }
+
+    return EMV_ERROR_COMMUNICATION;
+}
+
+// ==================================================
+// 新增功能7: 等待Linux处理结果
+// ==================================================
+EMV_Result_t EMV_WaitForLinuxResult(EMV_Complete_Card_Data_t *card_data)
+{
+    extern UART_HandleTypeDef huart1;
+    uint8_t rx_buffer[256];
+    uint32_t timeout = 10000; // 10秒超时
+
+    DEBUG_PRINTF("Waiting for Linux processing result...\r\n");
+
+    if (HAL_UART_Receive(&huart1, rx_buffer, sizeof(rx_buffer), timeout) == HAL_OK) {
+        // 解析Linux响应
+        if (strstr((char*)rx_buffer, "TRANSACTION_APPROVED") != NULL) {
+            DEBUG_PRINTF("Transaction APPROVED by Linux\r\n");
+            return EMV_SUCCESS;
+        } else if (strstr((char*)rx_buffer, "TRANSACTION_DECLINED") != NULL) {
+            DEBUG_PRINTF("Transaction DECLINED by Linux\r\n");
+            return EMV_ERROR_TRANSACTION_DECLINED;
+        } else {
+            DEBUG_PRINTF("Linux response: %s\r\n", rx_buffer);
+            return EMV_ERROR_COMMUNICATION;
+        }
+    }
+
+    DEBUG_PRINTF("Timeout waiting for Linux response\r\n");
+    return EMV_ERROR_COMMUNICATION;
+}
+
+// ==================================================
+// 新增功能8: 硬件指示
+// ==================================================
+void EMV_ShowSuccessIndication(void)
+{
+    DEBUG_PRINTF("Transaction Successful! 💳\r\n");
+    // 可以添加LED闪烁、蜂鸣器提示等
+    // beep_start(2, 200);  // 成功提示音
+}
+
+void EMV_ShowFailureIndication(void)
+{
+    DEBUG_PRINTF("Transaction Failed! ❌\r\n");
+    // 可以添加LED闪烁、蜂鸣器提示等
+    // beep_start(3, 100);  // 失败提示音
+}
+
