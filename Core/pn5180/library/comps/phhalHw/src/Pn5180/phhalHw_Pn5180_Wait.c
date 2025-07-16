@@ -51,11 +51,6 @@ phStatus_t phhalHw_Pn5180_WaitIrq(
     uint32_t   PH_MEMLOC_REM dwRegister;
     phOsal_EventBits_t PH_MEMLOC_REM tReceivedEvents;
 
-    // debug below----
-//    printf("WaitIrq: bEnableIrq=0x%02X, dwIrqWaitFor=0x%08lX\n", bEnableIrq, dwIrqWaitFor);
-
-    // debug top----
-
     /* Parameter check */
     if (0U == (dwIrqWaitFor))
     {
@@ -74,13 +69,11 @@ phStatus_t phhalHw_Pn5180_WaitIrq(
         bEnableIrq &= (uint8_t)~(uint8_t)PHHAL_HW_CHECK_IRQ_PIN_MASK;
     }
 
-    /* If requested by the user, enable the corresponding IRQs */
-//    if ((bEnableIrq & PHHAL_HW_CHECK_IRQ_PIN_MASK) != PH_OFF)
+    /* 中断引脚方式 ：If requested by the user, enable the corresponding IRQs */
     if(0)	// 强制跳过IRQ PIN模式，使用polling
+//    if ((bEnableIrq & PHHAL_HW_CHECK_IRQ_PIN_MASK) != PH_OFF)
     {
-    	printf("Using IRQ PIN mode\n"); //debug
         /*wait for IRQ pin event or Abort event*/
-
         {
             statusTmp = phOsal_EventPend((volatile phOsal_Event_t * )(&pDataParams->HwEventObj.EventHandle), E_OS_EVENT_OPT_PEND_SET_ANY, PHOSAL_MAX_DELAY,
                 (E_PH_OSAL_EVT_RF | E_PH_OSAL_EVT_ABORT), &tReceivedEvents);
@@ -120,6 +113,7 @@ phStatus_t phhalHw_Pn5180_WaitIrq(
 
         }
     }
+    /* 轮询IRQ_STATUS寄存器方式 */
     else
     {
         /* Wait until any of the IRQ bits that we are subscribing for occurs */

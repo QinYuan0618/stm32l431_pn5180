@@ -131,7 +131,7 @@
 
 /*****************************************************************
  * Timer Configuration for STM32L431
- * 使用TIM6实现微秒级延时功能，与PN5180驱动兼容
+ * 软件定时器配置
  ****************************************************************/
 #if 0
 #define PH_DRIVER_LPC_TIMER                    LPC_TIMER0           /**< Use LPC timer0 */
@@ -141,15 +141,12 @@
 #define PH_DRIVER_LPC_TIMER_IRQ_HANDLER        TIMER0_IRQHandler    /**< Timer0 Irq Handler */
 #define PH_DRIVER_LPC_TIMER_IRQ_PRIORITY       5                    /**< NVIC Timer0 Irq priority */
 #endif
-#define PHDRIVER_TIMER_INSTANCE       TIM6              /**< Timer Instance */
-#define PHDRIVER_TIMER_HANDLE         htim6             /**< Timer Handle */
-#define PHDRIVER_TIMER_IRQ            TIM6_DAC_IRQn     /**< Timer IRQ (如果需要中断模式) */
-#define PHDRIVER_TIMER_IRQ_HANDLER    TIM6_DAC_IRQHandler   /**< Timer IRQ Handler */
-#define PHDRIVER_TIMER_IRQ_PRIORITY   5                 /**< Timer IRQ priority */
-
-/* TIM6配置信息 - 用于微秒级延时 */
-#define PHDRIVER_TIMER_FREQ_MHZ       1                 /**< 1MHz计数频率 (80MHz/80预分频) */
-#define PHDRIVER_TIMER_MAX_US         60000             /**< 最大延时60ms (60000us) */
+#define PH_DRIVER_LPC_TIMER                    TIM2           /**< Use LPC timer0 */
+#define PH_DRIVER_LPC_TIMER_CLK                80000000U  /**< Timer 0 clock source */
+#define PH_DRIVER_LPC_TIMER_MATCH_REGISTER     0x01  /* use match register 1 always. */
+#define PH_DRIVER_LPC_TIMER_IRQ                TIM2_IRQn          /**< NVIC Timer0 Irq */
+#define PH_DRIVER_LPC_TIMER_IRQ_HANDLER        TIM2_IRQHandler    /**< Timer0 Irq Handler */
+#define PH_DRIVER_LPC_TIMER_IRQ_PRIORITY       5
 
 /* 延时函数声明 - 在tim.c中实现 */
 extern void delay_us(uint16_t us);
@@ -161,6 +158,7 @@ extern void delay_us(uint16_t us);
 
 /* 外部变量声明 - 需要在main.c中定义或者通过CubeMX生成 */
 extern SPI_HandleTypeDef hspi3;
+extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim6;
 
 /* 保持原有的clock rate定义 */

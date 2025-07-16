@@ -161,18 +161,17 @@ phStatus_t phApp_ConfigureLPCD(void)
 void CLIF_IRQHandler(void)
 {
     // 轮询模式下这个函数可能不会被调用
-	printf("-----------------------------");
+	printf("CLIF_IRQHandler is called\r\n");
     /* Read the interrupt status of external interrupt attached to the reader IC IRQ pin */
     if (phDriver_PinRead(PHDRIVER_PIN_IRQ, PH_DRIVER_PINFUNC_INTERRUPT))
     {
-        phDriver_PinClearIntStatus(PHDRIVER_PIN_IRQ);
-
         /* Call application registered callback. */
         if (pHal->pRFISRCallback != NULL)
         {
             pHal->pRFISRCallback(pHal);
         }
     }
+    phDriver_PinClearIntStatus(PHDRIVER_PIN_IRQ);
 }
 #endif /* NXPBUILD__PHHAL_HW_PN5180 */
 

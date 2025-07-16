@@ -36,6 +36,10 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_TypeDefs.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_NxpBuild.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_NxpBuild_Platform.h \
+ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/demo/NfcrdlibEx1_DiscoveryLoop/intfs/NfcrdlibEx1_EmvcoProfile.h \
+ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phacDiscLoop.h \
+ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phacDiscLoop/src/Sw/phacDiscLoop_Sw.h \
+ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phNxpNfcRdLib_Config.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phhalHw.h \
  ../Core/pn5180/portable/phOsal/inc/phOsal.h \
  ../Core/pn5180/portable/phOsal/inc/phOsal_Config.h \
@@ -50,7 +54,6 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/CMSIS/Device/ST/STM32L4xx/Include/stm32l431xx.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/portable/DAL/inc/phDriver_Timer.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phNfcLib.h \
- E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phNxpNfcRdLib_Config.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalI14443p3a.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phpalI14443p3a/src/Sw/phpalI14443p3a_Sw.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalI14443p3b.h \
@@ -94,8 +97,6 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phalT1T.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phalT1T/src/Sw/phalT1T_Sw.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phalTop.h \
- E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phacDiscLoop.h \
- E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phacDiscLoop/src/Sw/phacDiscLoop_Sw.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phalTop/src/Sw/phalTop_Sw.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phCryptoSym.h \
  E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phCryptoRng.h \
@@ -146,6 +147,10 @@ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_TypeDefs.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_NxpBuild.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/types/ph_NxpBuild_Platform.h:
+E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/demo/NfcrdlibEx1_DiscoveryLoop/intfs/NfcrdlibEx1_EmvcoProfile.h:
+E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phacDiscLoop.h:
+E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phacDiscLoop/src/Sw/phacDiscLoop_Sw.h:
+E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phNxpNfcRdLib_Config.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phhalHw.h:
 ../Core/pn5180/portable/phOsal/inc/phOsal.h:
 ../Core/pn5180/portable/phOsal/inc/phOsal_Config.h:
@@ -160,7 +165,6 @@ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/portable/DAL/inc/
 ../Drivers/CMSIS/Device/ST/STM32L4xx/Include/stm32l431xx.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/portable/DAL/inc/phDriver_Timer.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phNfcLib.h:
-E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phNxpNfcRdLib_Config.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalI14443p3a.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phpalI14443p3a/src/Sw/phpalI14443p3a_Sw.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phpalI14443p3b.h:
@@ -204,8 +208,6 @@ E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phalT1T.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phalT1T/src/Sw/phalT1T_Sw.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phalTop.h:
-E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phacDiscLoop.h:
-E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phacDiscLoop/src/Sw/phacDiscLoop_Sw.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/../comps/phalTop/src/Sw/phalTop_Sw.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phCryptoSym.h:
 E:/STM32CubeIDE/workspace_1.17.0/ISKBoard_20250602/Core/pn5180/library/intfs/phCryptoRng.h:

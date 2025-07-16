@@ -52,6 +52,7 @@
 #include "NfcrdlibEx1_EmvcoProfile.h"
 #include "phhalHw_Pn5180_Reg.h"
 #include "phhalHw_Pn5180_Instr.h"
+#include "emv_transaction.h"  // 新增头文件
 
 /* defines */
 #define PH_OSAL_NULLOS         1

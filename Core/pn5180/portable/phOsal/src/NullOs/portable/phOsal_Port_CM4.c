@@ -125,9 +125,7 @@ void phOsal_ExitCriticalSection(void)
 
 void phOsal_Sleep(void)
 {
-    // 不使用 __WFE()，改为短暂延时
-    // __WFE();
-    for(volatile int i = 0; i < 1000; i++);
+     __WFE();
 }
 
 void phOsal_WakeUp(void)
@@ -135,9 +133,8 @@ void phOsal_WakeUp(void)
     __SEV();
 }
 
-
-// 注释掉这个函数，因为STM32已经有了
-/*
+/* stm32中已有 */
+#if 0
 void SysTick_Handler(void)
 {
     if(qwLoadValue)
@@ -157,5 +154,6 @@ void SysTick_Handler(void)
         pTickCallBack();
     }
 }
-*/
+#endif
+
 #endif

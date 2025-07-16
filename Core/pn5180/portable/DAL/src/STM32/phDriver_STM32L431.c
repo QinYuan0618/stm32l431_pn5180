@@ -14,11 +14,11 @@
 /** \file
 * Generic phDriver Component of Reader Library Framework for STM32L431.
 *
-* \brief 这个文件是硬件抽象层HAL，是连接NXP库与官方STM32的关键桥梁，它需要将所有LPC平台的代码替换成STM32 HAL库的实现
-* 		 需要实现的核心功能：GPIO操作函数、SPI通信函数、定时器/延时函数、中断处理函数
+* \brief 这个文件是驱动程序抽象层（DAL），此组件实现RdLib软件模块所需的硬件驱动程序
+* 		 实现的核心功能：GPIO操作函数、定时器/延时函数、中断相关函数
 * $Author$ 		qinyuan
-* $Revision$	1.1
-* $Date$		2025/06/07
+* $Revision$	1.2
+* $Date$		2025/06/26
 *
 */
 
@@ -28,6 +28,7 @@
 #include "spi.h"
 #include <stdio.h>
 #include "stm32l4xx.h"
+#include "gpio.h"  // PinConfig IRQ
 
 #define false	(0UL)
 #define true	(1UL)
@@ -63,7 +64,44 @@ static volatile uint8_t g_irq_pending = 0;
 /* GPIO FUNC_1:配置GPIO引脚的功能和属性 */
 phStatus_t phDriver_PinConfig(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, phDriver_Pin_Func_t ePinFunc, phDriver_Pin_Config_t *pPinConfig)
 {
-    /* 已经在GPIO_INIT实现 */
+	uint32_t mode;
+
+	// 空指针保护
+	if (pPinConfig == NULL)
+	    return PH_DRIVER_ERROR;
+
+	if(GPIO_Pin == PN5180_IRQ_Pin)
+	{
+		GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+		HAL_GPIO_DeInit(PN5180_IRQ_GPIO_Port, PN5180_IRQ_Pin);
+
+		mode = (pPinConfig->bPullSelect == PH_DRIVER_PULL_DOWN)?GPIO_PULLDOWN:GPIO_PULLUP;
+		GPIO_InitStruct.Pull = mode;
+
+		switch(pPinConfig->eInterruptConfig)
+		{
+			case PH_DRIVER_INTERRUPT_RISINGEDGE:
+				GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+				break;
+
+			case PH_DRIVER_INTERRUPT_FALLINGEDGE:
+				GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+				break;
+
+			case PH_DRIVER_INTERRUPT_EITHEREDGE:
+			    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+			    break;
+
+			default:
+				/* Do Nothing. */
+				break;
+	    }
+		GPIO_InitStruct.Pin = PN5180_IRQ_Pin;
+		HAL_GPIO_Init(PN5180_IRQ_GPIO_Port, &GPIO_InitStruct);
+	}
+
+    /* 其他GPIO已经在GPIO_INIT实现 */
     return PH_DRIVER_SUCCESS;
 }
 
@@ -159,8 +197,20 @@ phStatus_t phDriver_TimerStart(phDriver_Timer_Unit_t eTimerUnit, uint32_t dwTime
 
 phStatus_t phDriver_TimerStop(void)
 {
-//	 printf("NFC: Timer stop called (HAL_Delay mode - no action needed)\r\n");
+#if 0
+	/* 停止定时器 - 对应 Chip_TIMER_Disable */
+    HAL_TIM_Base_Stop_IT(&PHDRIVER_TIMER_HANDLE);
 
+    /* 反初始化定时器 - 对应 Chip_TIMER_DeInit */
+    HAL_TIM_Base_DeInit(&PHDRIVER_TIMER_HANDLE);
+
+    /* 禁用定时器中断 - 对应 NVIC_DisableIRQ */
+    HAL_NVIC_DisableIRQ(PHDRIVER_TIMER_IRQ);
+
+    /* 清除回调函数和标志 */
+    pTimerIsrCallBack = NULL;
+    dwTimerExp = 0;
+#endif
     return PH_DRIVER_SUCCESS;
 }
 
@@ -169,27 +219,37 @@ phStatus_t phDriver_TimerStop(void)
 /* *****************************************************************************************************************
  * 中断处理函数
  * ***************************************************************************************************************** */
-
-#if 0  // HAL_Delay方案不需要这些中断函数
 /**
- * 定时器中断处理函数 - 替换原来的PH_DRIVER_LPC_TIMER_IRQ_HANDLER
+ * TIM2中断处理函数 - 需要在stm32l4xx_it.c中调用
+ * 或者替换现有的TIM2_DAC_IRQHandler
+ *
+ * 这个函数完全模拟原始LPC实现的行为：
+ * 1. 清除中断标志
+ * 2. 调用回调函数
+ * 3. 停止并反初始化定时器
+ * 4. 禁用定时器中断
  */
 void PHDRIVER_TIMER_IRQ_HANDLER(void)
 {
-    /* 清除中断标志 */
-    __HAL_TIM_CLEAR_FLAG(&PHDRIVER_TIMER_HANDLE, TIM_FLAG_UPDATE);
+#if 0
+    /* 清除定时器中断标志 - 对应 Chip_TIMER_ClearMatch */
+    __HAL_TIM_CLEAR_IT(&PHDRIVER_TIMER_HANDLE, TIM_IT_UPDATE);
 
     /* 调用回调函数 */
-    if(pTimerIsrCallBack != NULL)
-    {
+    if (pTimerIsrCallBack != NULL) {
         pTimerIsrCallBack();
     }
 
-    /* 停止定时器 */
+    /* 停止定时器 - 对应 Chip_TIMER_Disable */
     HAL_TIM_Base_Stop_IT(&PHDRIVER_TIMER_HANDLE);
+
+    /* 反初始化定时器 - 对应 Chip_TIMER_DeInit */
+    HAL_TIM_Base_DeInit(&PHDRIVER_TIMER_HANDLE);
+
+    /* 禁用定时器中断 - 对应 NVIC_DisableIRQ */
     HAL_NVIC_DisableIRQ(PHDRIVER_TIMER_IRQ);
-}
 #endif
+}
 
 #if 0		// ---NXP官方源码
 void PH_DRIVER_LPC_TIMER_IRQ_HANDLER(void)
@@ -206,15 +266,16 @@ void PH_DRIVER_LPC_TIMER_IRQ_HANDLER(void)
 }
 #endif		// ---NXP官方源码
 
-#if 0  // HAL_Delay方案不需要这些中断函数
+
 /**
- * 默认定时器回调函数
+ * 默认定时器回调函数, 用于阻塞模式
  */
 static void phDriver_TimerIsrCallBack(void)
 {
     dwTimerExp = 1;
 }
 
+#if 0
 /**
  * HAL库定时器回调函数 - 由HAL库自动调用
  */
@@ -226,8 +287,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         PHDRIVER_TIMER_IRQ_HANDLER();
     }
 }
-#endif		// HAL_Delay方案不需要这些中断函数
-
+#endif
 /* *****************************************************************************************************************
  * 系统功能函数
  * ***************************************************************************************************************** */

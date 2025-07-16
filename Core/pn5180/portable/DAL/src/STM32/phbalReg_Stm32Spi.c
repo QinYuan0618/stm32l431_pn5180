@@ -17,6 +17,7 @@
 *
 * \brief 		STM32 HAL SPI Implementation for NXP NFC Library
 * 				Modified from phbalReg_LpcOpenSpi.c for STM32L431 + PN5180
+* 				这是一个总线抽象层（BAL），主要是实现总线初始化、总线上数据传输的任务
 *
 * $Author$		qinyuan
 * $Revision$	v1
@@ -113,6 +114,18 @@ phStatus_t phbalReg_Init(
     return PH_DRIVER_SUCCESS;
 }
 
+// 简洁的SPI数据打印函数
+void print_spi_data(const char* direction, uint8_t* data, uint16_t length)
+{
+    if (length == 0) return;
+
+    printf("SPI%s ", direction);
+    for (uint16_t i = 0; i < length; i++) {
+        printf("%02X ", data[i]);
+    }
+    printf("\r\n");
+}
+
 /**
 * \brief STM32 SPI数据交换函数
 * 这是最重要的函数，负责所有SPI通信
@@ -127,6 +140,7 @@ phStatus_t phbalReg_Exchange(
                                         uint16_t * pRxLength
                                         )
 {
+#if 0
 	uint8_t * pRxBuf = NULL;                    // 实际接收缓存指针
 	uint8_t dummyTxByte = 0xFF;
 
@@ -140,7 +154,7 @@ phStatus_t phbalReg_Exchange(
 		pRxBuf = pRxBuffer;
 	}
 
-//1	printf("SPITX>> ");
+	printf("SPITX>> ");
 	for (int i = 0; i < wTxLength; i++)
 	{
 		uint8_t txByte = (pTxBuffer != NULL) ? pTxBuffer[i] : dummyTxByte;	// 发送1字节
@@ -152,26 +166,91 @@ phStatus_t phbalReg_Exchange(
 			return (PH_DRIVER_FAILURE | PH_COMP_DRIVER);
 		}
 
-//1		printf("%02X ", txByte);  // 打印发送内容
+		printf("%02X ", txByte);  // 打印发送内容
 
 		if (pRxBuf != NULL && i < wRxBufSize)
 		{
 			pRxBuf[i] = rxByte;
 		}
 	}
-//1	printf("\n");
+	printf("\n");
 
 	if (pRxBuf != NULL)
 	{
-//1		printf("SPIRX<< ");
+		printf("SPIRX<< ");
 		for (int i = 0; i < wTxLength && i < wRxBufSize; i++)
 		{
-//1			printf("%02X ", pRxBuf[i]);
+			printf("%02X ", pRxBuf[i]);
 		}
-//1		printf("\n");
+		printf("\n");
 	}
 
 	// 返回接收到的数据长度
+	if (pRxLength != NULL)
+	{
+		*pRxLength = (pRxBuf != NULL) ? wTxLength : 0;
+	}
+
+	return PH_DRIVER_SUCCESS;
+#endif
+	uint8_t *pRxBuf = NULL;
+	uint8_t dummyTxByte = 0xFF;
+
+	// 只发送不接收
+	if (pRxBuffer == NULL)
+	{
+		pRxBuf = NULL;
+	}
+	else // 接收
+	{
+		pRxBuf = pRxBuffer;
+	}
+
+//	printf("SPITX>> ");
+	for (int i = 0; i < wTxLength; i++)
+	{
+		uint8_t txByte = (pTxBuffer != NULL) ? pTxBuffer[i] : dummyTxByte;
+//		printf("%02X ", txByte); // 打印发送内容
+	}
+//	printf("\n");
+
+	// 定义临时 buffer
+	uint8_t txBuf[wTxLength];
+	uint8_t rxBuf[wTxLength];
+
+	// 填充 txBuf
+	for (int i = 0; i < wTxLength; i++)
+	{
+		txBuf[i] = (pTxBuffer != NULL) ? pTxBuffer[i] : dummyTxByte;
+	}
+
+	// 一次性全双工发送接收
+	if (HAL_SPI_TransmitReceive(&hspi3, txBuf, rxBuf, wTxLength, 1000) != HAL_OK)
+	{
+		return (PH_DRIVER_FAILURE | PH_COMP_DRIVER);
+	}
+
+	// 拷贝接收到的内容到 pRxBuf
+	if (pRxBuf != NULL)
+	{
+		for (int i = 0; i < wTxLength && i < wRxBufSize; i++)
+		{
+			pRxBuf[i] = rxBuf[i];
+		}
+	}
+
+	// 打印接收内容
+	if (pRxBuf != NULL)
+	{
+//		printf("SPIRX<< ");
+		for (int i = 0; i < wTxLength && i < wRxBufSize; i++)
+		{
+//			printf("%02X ", pRxBuf[i]);
+		}
+//		printf("\n");
+	}
+
+	// 返回接收长度
 	if (pRxLength != NULL)
 	{
 		*pRxLength = (pRxBuf != NULL) ? wTxLength : 0;

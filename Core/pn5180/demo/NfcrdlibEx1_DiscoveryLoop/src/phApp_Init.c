@@ -332,7 +332,7 @@ phStatus_t phApp_Configure_IRQ()
 
     pinCfg.bOutputLogic = PH_DRIVER_SET_LOW;		// 输出低电平
     pinCfg.bPullSelect = PHDRIVER_PIN_IRQ_PULL_CFG;	// 上拉
-    pinCfg.eInterruptConfig = PIN_IRQ_TRIGGER_TYPE;	//下降沿触发
+    pinCfg.eInterruptConfig = PIN_IRQ_TRIGGER_TYPE;	// 下降沿触发
 
     phDriver_PinConfig(PHDRIVER_PIN_IRQ, PH_DRIVER_PINFUNC_INTERRUPT, &pinCfg);
 #endif
@@ -363,9 +363,7 @@ phStatus_t phApp_Configure_IRQ()
 
 #endif /* #ifdef PH_PLATFORM_HAS_ICFRONTEND */
 
-    // 简化版本 - 不配置IRQ，直接返回成功
-    DEBUG_PRINTF("IRQ configuration.\r\n"); //skipped - using polling mode
-
+    // 可能不配置IRQ，直接返回
     return PH_ERR_SUCCESS;
 }
 

@@ -28,6 +28,7 @@
 #include <string.h>
 #include "stm32l4xx_hal.h"
 #include "NfcrdlibEx1_DiscoveryLoop.h"
+#include "NfcrdlibEx1_EmvcoProfile.h"
 #include "phhalHw.h"
 #include "phhalHw_Pn5180_Reg.h"
 #include "ph_RefDefs.h"
@@ -114,7 +115,7 @@ int main(void)
 
   beep_start(1, 300); 	/* 蜂鸣器响1声 */
 
-  /* 调用NFC Disvery功能*/
+  /* 调用NFC Discovery功能*/
   nfc_discovery_main();
 
   /* USER CODE END 2 */
@@ -179,7 +180,7 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+#if 0
 /* 处理 UART1 串口接收的数据，并尝试解析 JSON 数据 */
 void proc_uart1_recv(void)
 {
@@ -192,7 +193,7 @@ void proc_uart1_recv(void)
 		clear_uart1_rxbuf(); /* 清零buf */
 	}
 }
-
+#endif
 /* USER CODE END 4 */
 
 /**

@@ -253,12 +253,20 @@ static phStatus_t EmvcoDataExchange(uint8_t * com_buffer, uint8_t cmdsize, uint8
     uint8_t *ppRxBuffer;
     uint16_t wRxLen = 0;
 
+    // 打印发送的C-APDU
+    DEBUG_PRINTF("\n=== C-APDU SEND (%d bytes) ===\n", cmdsize);
+    phApp_Print_Buff(com_buffer, cmdsize);
+
     status = phpalI14443p4_Exchange(phNfcLib_GetDataParams(PH_COMP_PAL_ISO14443P4), PH_EXCHANGE_DEFAULT,
     		com_buffer, cmdsize, &ppRxBuffer, &wRxLen);
     if (PH_ERR_SUCCESS == status)
     {
         /* set the pointer to the start of the R-APDU */
         *resp_buffer = &ppRxBuffer[0];
+
+        // 打印接收的R-APDU
+        DEBUG_PRINTF("\n=== R-APDU RECV (%d bytes) ===\n", wRxLen);
+        phApp_Print_Buff(ppRxBuffer, wRxLen);
     }
     else
     {

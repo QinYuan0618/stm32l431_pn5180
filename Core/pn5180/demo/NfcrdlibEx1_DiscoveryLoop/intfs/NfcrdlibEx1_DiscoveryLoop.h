@@ -49,7 +49,7 @@ int nfc_discovery_main(void);
  * ENABLE_EMVCO_PROF macro.
 */
 #ifdef ENABLE_DISC_CONFIG
-//    #define ENABLE_EMVCO_PROF
+    #define ENABLE_EMVCO_PROF
 #endif /* ENABLE_DISC_CONFIG */
 
 #ifdef PH_OSAL_FREERTOS

@@ -382,10 +382,10 @@ phStatus_t phhalHw_Pn5180_Init(
     }
 
 #endif
-
+    HAL_Delay(1000);
     PH_CHECK_SUCCESS_FCT(statusTmp, phhalHw_Pn5180_Instr_ReadE2Prom(pDataParams, PHHAL_HW_PN5180_FIRMWARE_VERSION_ADDR, bFirmwareVer, 2U));
     printf("PN-Firmware = %02X %02X\n", bFirmwareVer[1], bFirmwareVer[0]);	// PN-Firmware = 04 00
-
+    HAL_Delay(1000);
     if ( (0xFFU == bFirmwareVer[0]) && (0xFFU == bFirmwareVer[1]) )
     {
         /* SPI Read problem... it is returing all FFFFs..
@@ -2869,6 +2869,7 @@ phStatus_t phhalHw_Pn5180_Receive(
 
                 PH_CHECK_SUCCESS_FCT(statusTmp, phhalHw_Pn5180_Instr_WriteRegisterAndMask(pDataParams, SYSTEM_CONFIG,(uint32_t)~SYSTEM_CONFIG_ACTIVE_MODE_TX_RF_ENABLE_MASK));
 
+                printf("phhalHw_Pn5180_Receive:\r\n");
                 status = phOsal_EventPend((volatile phOsal_Event_t * )(&pDataParams->HwEventObj.EventHandle), E_OS_EVENT_OPT_PEND_SET_ANY, 400U, E_PH_OSAL_EVT_RF, NULL);
 
                 if( ( status & PH_ERR_MASK ) == PH_ERR_IO_TIMEOUT)
@@ -3707,6 +3708,7 @@ phStatus_t phhalHw_Pn5180_18000p3m3ResumeInventory(
 
 phStatus_t phhalHw_Pn5180_EventWait(phhalHw_Pn5180_DataParams_t * pDataParams, uint32_t dwEventTimeout)
 {
+	printf("phhalHw_Pn5180_EventWait:\r\n");
     return phOsal_EventPend((volatile phOsal_Event_t *)(&pDataParams->HwEventObj.EventHandle), E_OS_EVENT_OPT_PEND_SET_ANY, dwEventTimeout,
         (E_PH_OSAL_EVT_RF | E_PH_OSAL_EVT_ABORT), NULL);
 }

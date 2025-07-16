@@ -102,20 +102,19 @@ phStatus_t phOsal_EventPend(volatile phOsal_Event_t * eventHandle, phOsal_EventO
 	{
 	//dd1        phOsal_StartTickTimer(ticksToWait);
 	}
-
-/* 核心等待逻辑：被禁用 */
-#if 0           //1
+#if 0
+/* 核心等待逻辑：只要任意一个FlagToWait被置位，就唤醒 */
 	while(1)
 	{
 	    /* Enter Critical Section */
-	    phOsal_EnterCriticalSection();
+//	    phOsal_EnterCriticalSection();
 
 	    if ((((options & E_OS_EVENT_OPT_PEND_SET_ALL) && (((*((uint32_t *)(*eventHandle))) & FlagsToWait) == FlagsToWait))
 	        || ((!(options & E_OS_EVENT_OPT_PEND_SET_ALL)) && ((*((uint32_t *)(*eventHandle))) & FlagsToWait)))
 	        || (gbWaitTimedOut))
 	    {
 	        /* Exit Critical Section. */
-	        phOsal_ExitCriticalSection();
+//	        phOsal_ExitCriticalSection();
 	        if (gbWaitTimedOut != 0x01)
 	        {
 	            status = PH_OSAL_SUCCESS;
@@ -123,13 +122,12 @@ phStatus_t phOsal_EventPend(volatile phOsal_Event_t * eventHandle, phOsal_EventO
 	        break;
 	    }
 	    /* Exit Critical Section. */
-	    phOsal_ExitCriticalSection();
+//	    phOsal_ExitCriticalSection();
 
 	    /* Wait for interrupts/events to occur */
 	    phOsal_Sleep();
 	}
-	#endif          //1
-
+#endif
 	//dd1    phOsal_StopTickTimer();
 	gbWaitTimedOut = 0;		// 清除超时标志
 
