@@ -52,7 +52,8 @@
 #include "NfcrdlibEx1_EmvcoProfile.h"
 #include "phhalHw_Pn5180_Reg.h"
 #include "phhalHw_Pn5180_Instr.h"
-#include "emv_transaction.h"  // 新增头文件
+#include "emv_transaction.h"  // 获取卡基本信息并打印
+#include "emv_payment_flow.h" // 卡交易支付流程
 
 /* defines */
 #define PH_OSAL_NULLOS         1
@@ -135,7 +136,7 @@ int nfc_discovery_main(void)
         /* Perform OSAL Initialization. */
 //        (void)phOsal_Init(); // STM32的HAL_Ini()中已经配置了Systick，通过HAL_InitTick()，不需要OSAL的定时器
 
-        DEBUG_PRINTF("\n DiscoveryLoop Example: \n");
+        DEBUG_PRINTF("\n[DiscoveryLoop]: \n");
 
         /* 3.IC前端初始化 */
 #ifdef PH_PLATFORM_HAS_ICFRONTEND
@@ -275,10 +276,10 @@ void DiscoveryLoop_Demo(void  *pDataParams)
          * Start discovery loop */
         /* PROGRAM BLOCK HERE at first, problem is solved */
         status = phacDiscLoop_Run(pDataParams, wEntryPoint);
-        /* 输出：0x4080  或者  0x4083, 是否表示错误? 检测到卡返回0x408B */
+        /* 输出：0x4080  或者  0x4083, 是否表示错误? 成功检测到卡返回0x408B */
         DEBUG_PRINTF("Discovery result: 0x%04X\r\n", status);
 
-        /* ========== 🆕 EMV交易处理集成点 ========== */
+        /* ========== EMV交易处理集成点 ========== */
         if((status & PH_ERR_MASK) == PHAC_DISCLOOP_DEVICE_ACTIVATED)
         {
             DEBUG_PRINTF("Card activated, checking EMV compatibility\r\n");
@@ -289,13 +290,12 @@ void DiscoveryLoop_Demo(void  *pDataParams)
                 DEBUG_PRINTF("=== EMV Compatible Card Detected, Starting Transaction ===\r\n");
 
                 /* 执行EMV交易流程 */
-//1                EMV_Result_t emv_result = EMV_ProcessTransaction(pDataParams, 1000, 0x0156); // 10.00元, CNY
-                EMV_Result_t emv_result = EMV_ProcessTransaction_Enhanced(pDataParams, 1000, 0x0156);
+                EMV_Result_t emv_result = EMV_ProcessPaymentFlow(pDataParams, 1000, 0x0156); // 10元人民币
 
                 if (emv_result == EMV_SUCCESS) {
-                    DEBUG_PRINTF("=== EMV Transaction Completed Successfully ===\r\n");
+                    DEBUG_PRINTF("=== EMV Payment Flow Complete Successfully ===\r\n");
                 } else {
-                    DEBUG_PRINTF("=== EMV Transaction Failed, Error Code: %d ===\r\n", emv_result);
+                    DEBUG_PRINTF("=== EMV Payment Flow Failed, Error Code: %d ===\r\n", emv_result);
                 }
 
                 /* 等待卡片移除后继续循环 */
@@ -922,190 +922,6 @@ uint8_t EMV_IsEMVCompatibleCard(void *pDataParams)
 }
 
 /**
- * EMV交易处理主函数
- */
-EMV_Result_t EMV_ProcessTransaction(void *pDataParams, uint32_t amount, uint16_t currency_code)
-{
-	// 使用增强版本的交易处理
-    return EMV_ProcessTransaction_Enhanced(pDataParams, amount, currency_code);
-
-#if 0
-    phacDiscLoop_Sw_DataParams_t *pDiscLoop = (phacDiscLoop_Sw_DataParams_t *)pDataParams;
-
-    DEBUG_PRINTF("=== Starting EMV Transaction Process ===\r\n");
-    DEBUG_PRINTF("Transaction Amount: %lu.%02lu CNY\r\n", amount/100, amount%100);
-
-    EMV_Result_t result = EMV_SUCCESS;
-
-    do {
-        // 步骤1: 选择PPSE (Proximity Payment System Environment)
-        DEBUG_PRINTF("Step 1: Select PPSE\r\n");
-        result = EMV_SelectPPSE();
-        if (result != EMV_SUCCESS) {
-            DEBUG_PRINTF("PPSE Selection Failed\r\n");
-            break;
-        }
-        DEBUG_PRINTF("PPSE Selection Successful\r\n");
-
-        // 步骤2: 应用选择 (简化版本)
-        DEBUG_PRINTF("Step 2: Try to Select masterCard Application\r\n");
-
-        uint8_t mastercard_aid[] = {0xA0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10}; // MasterCard AID
-        result = EMV_SelectApplication(mastercard_aid, sizeof(mastercard_aid));
-        if (result != EMV_SUCCESS)
-        {
-            // Try Visa
-            DEBUG_PRINTF("Try to Select Visa Application\r\n");
-            uint8_t visa_aid[] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10};
-            result = EMV_SelectApplication(visa_aid, sizeof(visa_aid));
-            if (result != EMV_SUCCESS) {
-                // Try UnionPay
-                DEBUG_PRINTF("Try to Select UnionPay Application\r\n");
-                uint8_t unionpay_aid[] = {0xA0, 0x00, 0x00, 0x03, 0x33, 0x01, 0x01};
-                result = EMV_SelectApplication(unionpay_aid, sizeof(unionpay_aid));
-                if (result != EMV_SUCCESS) {
-                    DEBUG_PRINTF("Application Selection Failed\r\n");
-                    break;
-                }
-            }
-        }
-        DEBUG_PRINTF("Application Selection Successful\r\n");
-
-        // 步骤3: 获取处理选项 (Get Processing Options)
-        DEBUG_PRINTF("Step 3: Get Processing Options\r\n");
-        result = EMV_GetProcessingOptions(amount, currency_code);
-        if (result != EMV_SUCCESS) {
-            DEBUG_PRINTF("GPO Failed\r\n");
-            break;
-        }
-        DEBUG_PRINTF("GPO Successful\r\n");
-
-        // 步骤4: 读取应用数据
-        DEBUG_PRINTF("Step 4: Read Application Data\r\n");
-        result = EMV_ReadApplicationData();
-        if (result != EMV_SUCCESS) {
-            DEBUG_PRINTF("Read Application Data Failed\r\n");
-            break;
-        }
-        DEBUG_PRINTF("Read Application Data Successful\r\n");
-
-        // 步骤5: 发送数据到Linux端进行后续处理
-        DEBUG_PRINTF("Step 5: Send Transaction Data to Linux\r\n");
-        if (EMV_SendDataToLinux(amount, currency_code) != 0) {
-            result = EMV_ERROR_COMMUNICATION;
-            DEBUG_PRINTF("Communication with Linux Failed\r\n");
-            break;
-        }
-        DEBUG_PRINTF("Data Sent Successfully\r\n");
-
-        result = EMV_SUCCESS;
-
-    } while(0);
-
-    if (result == EMV_SUCCESS) {
-        DEBUG_PRINTF("=== EMV Transaction Process Completed ===\r\n");
-    } else {
-        DEBUG_PRINTF("=== EMV Transaction Process Failed, Error Code: %d ===\r\n", result);
-    }
-
-    return result;
-#endif
-}
-
-// ==================================================
-// 修改2: 重写EMV交易处理函数 - 专注数据收集
-// ==================================================
-EMV_Result_t EMV_ProcessTransaction_Enhanced(void *pDataParams, uint32_t amount, uint16_t currency_code)
-{
-    phacDiscLoop_Sw_DataParams_t *pDiscLoop = (phacDiscLoop_Sw_DataParams_t *)pDataParams;
-    EMV_Complete_Card_Data_t card_data;
-    memset(&card_data, 0, sizeof(card_data));
-
-    DEBUG_PRINTF("=== Starting Enhanced EMV Data Collection ===\r\n");
-    DEBUG_PRINTF("Transaction Amount: %lu.%02lu CNY\r\n", amount/100, amount%100);
-
-    // 设置交易参数
-    card_data.amount = amount;
-    card_data.currency_code = currency_code;
-    card_data.transaction_type = 0x00; // 商品/服务交易
-
-    EMV_Result_t result = EMV_SUCCESS;
-
-    do {
-        // 步骤1: 收集卡片基础信息
-        DEBUG_PRINTF("Step 1: Collect Card Basic Info\r\n");
-        result = EMV_CollectCardBasicInfo(pDiscLoop, &card_data);
-        if (result != EMV_SUCCESS) {
-            DEBUG_PRINTF("Failed to collect card basic info\r\n");
-            break;
-        }
-
-        // 步骤2: 收集PPSE信息
-        DEBUG_PRINTF("Step 2: Collect PPSE Information\r\n");
-        result = EMV_CollectPPSEInfo(&card_data);
-        if (result != EMV_SUCCESS) {
-            DEBUG_PRINTF("PPSE collection failed\r\n");
-            break;
-        }
-
-        // 步骤3: 收集应用选择信息
-        DEBUG_PRINTF("Step 3: Collect Application Selection Info\r\n");
-        result = EMV_CollectApplicationInfo(&card_data);
-        if (result != EMV_SUCCESS) {
-            DEBUG_PRINTF("Application selection failed\r\n");
-            break;
-        }
-
-        // 步骤4: 收集GPO信息
-        DEBUG_PRINTF("Step 4: Collect GPO Information\r\n");
-        result = EMV_CollectGPOInfo(&card_data);
-        if (result != EMV_SUCCESS) {
-            DEBUG_PRINTF("GPO collection failed\r\n");
-            break;
-        }
-
-        // 步骤5: 收集所有应用记录
-        DEBUG_PRINTF("Step 5: Collect All Application Records\r\n");
-        result = EMV_CollectAllRecords(&card_data);
-        if (result != EMV_SUCCESS) {
-            DEBUG_PRINTF("Record collection failed\r\n");
-            break;
-        }
-
-        // 步骤6: 发送完整数据到Linux处理
-        DEBUG_PRINTF("Step 6: Send Complete Data to Linux\r\n");
-        result = EMV_SendCompleteDataToLinux(&card_data);
-        if (result != EMV_SUCCESS) {
-            DEBUG_PRINTF("Data transmission failed\r\n");
-            break;
-        }
-
-        // 步骤7: 等待Linux处理结果
-        DEBUG_PRINTF("Step 7: Wait for Linux Processing Result\r\n");
-        result = EMV_WaitForLinuxResult(&card_data);
-        if (result != EMV_SUCCESS) {
-            DEBUG_PRINTF("Linux processing failed\r\n");
-            break;
-        }
-
-        result = EMV_SUCCESS;
-
-    } while(0);
-
-    // 显示最终结果
-    if (result == EMV_SUCCESS) {
-        DEBUG_PRINTF("=== EMV Transaction Completed Successfully ===\r\n");
-        EMV_ShowSuccessIndication();
-    } else {
-        DEBUG_PRINTF("=== EMV Transaction Failed, Error Code: %d ===\r\n", result);
-        EMV_ShowFailureIndication();
-    }
-
-    return result;
-}
-
-
-/**
  * Select PPSE
  */
 EMV_Result_t EMV_SelectPPSE(void)
@@ -1720,14 +1536,14 @@ EMV_Result_t EMV_WaitForLinuxResult(EMV_Complete_Card_Data_t *card_data)
 // ==================================================
 void EMV_ShowSuccessIndication(void)
 {
-    DEBUG_PRINTF("Transaction Successful! 💳\r\n");
+    DEBUG_PRINTF("Transaction Successful!\r\n");
     // 可以添加LED闪烁、蜂鸣器提示等
     // beep_start(2, 200);  // 成功提示音
 }
 
 void EMV_ShowFailureIndication(void)
 {
-    DEBUG_PRINTF("Transaction Failed! ❌\r\n");
+    DEBUG_PRINTF("Transaction Failed!\r\n");
     // 可以添加LED闪烁、蜂鸣器提示等
     // beep_start(3, 100);  // 失败提示音
 }
