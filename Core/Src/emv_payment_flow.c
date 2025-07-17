@@ -274,6 +274,14 @@ EMV_Result_t EMV_State_OfflineDataAuthentication(EMV_Payment_Context_t *context)
 {
     DEBUG_PRINTF("Executing Offline Data Authentication...\r\n");
 
+    uint8_t auth_data[] = {0xEF, 0x08, 0x3F, 0x1A};
+    uint8_t internal_auth_response[256];
+    uint16_t internal_auth_len = 0;
+
+    DEBUG_PRINTF("SEND INTERNAL AUTHENTICATE CMD...\r\n");
+    EMV_InternalAuthenticate(auth_data, sizeof(auth_data),
+                            internal_auth_response, &internal_auth_len);
+
     /* Send certificate data to Linux for verification */
     Linux_Response_t response = EMV_FormatAndSendLinuxCommand(
         LINUX_CMD_OFFLINE_DATA_AUTH, context);
@@ -766,4 +774,57 @@ EMV_Result_t EMV_ProcessPaymentFlow(void *pDataParams, uint32_t amount, uint16_t
         EMV_ShowFailureIndication();
         return payment_context.last_error;
     }
+}
+
+EMV_Result_t EMV_InternalAuthenticate(uint8_t *auth_data, uint16_t auth_data_len,
+                                     uint8_t *response, uint16_t *response_len)
+{
+    // 构造APDU: 00 88 00 00 Lc [Data] Le
+    uint8_t apdu[261];
+    uint16_t apdu_len = 0;
+
+    apdu[apdu_len++] = 0x00;  // CLA
+    apdu[apdu_len++] = 0x88;  // INS: INTERNAL AUTHENTICATE
+    apdu[apdu_len++] = 0x00;  // P1
+    apdu[apdu_len++] = 0x00;  // P2
+    apdu[apdu_len++] = auth_data_len;  // Lc
+
+    memcpy(&apdu[apdu_len], auth_data, auth_data_len);
+    apdu_len += auth_data_len;
+    apdu[apdu_len++] = 0x00;  // Le
+
+    DEBUG_PRINTF("C-APDU: ");
+    for (int i = 0; i < apdu_len; i++) {
+        DEBUG_PRINTF("%02X ", apdu[i]);
+    }
+    DEBUG_PRINTF("\r\n");
+
+    // 发送APDU
+    phStatus_t status;
+    uint8_t *rx_buffer;
+    uint16_t rx_len = 0;
+
+    status = phpalI14443p4_Exchange(
+        phNfcLib_GetDataParams(PH_COMP_PAL_ISO14443P4),
+        PH_EXCHANGE_DEFAULT, apdu, apdu_len, &rx_buffer, &rx_len);
+
+    if (status == PH_ERR_SUCCESS && rx_len >= 2) {
+        uint8_t sw1 = rx_buffer[rx_len-2];
+        uint8_t sw2 = rx_buffer[rx_len-1];
+
+        DEBUG_PRINTF("R-SW: %02X-%02X, Len: %d\r\n", sw1, sw2, rx_len-2);
+
+        if (sw1 == 0x90 && sw2 == 0x00) {
+            *response_len = rx_len - 2;
+            memcpy(response, rx_buffer, *response_len);
+
+            for (int i = 0; i < *response_len; i++) {
+                if (i % 16 == 0) DEBUG_PRINTF("\r\n");
+                DEBUG_PRINTF("%02X ", rx_buffer[i]);
+            }
+            DEBUG_PRINTF("\r\n");
+            return EMV_SUCCESS;
+        }
+    }
+    return EMV_ERROR_COMMUNICATION;
 }

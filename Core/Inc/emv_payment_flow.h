@@ -171,6 +171,9 @@ Linux_Response_t EMV_SendToLinux(Linux_Command_t cmd,
  */
 Linux_Response_t EMV_FormatAndSendLinuxCommand(Linux_Command_t cmd, EMV_Payment_Context_t *context);
 
+EMV_Result_t EMV_InternalAuthenticate(uint8_t *auth_data, uint16_t auth_data_len,
+                                     uint8_t *response, uint16_t *response_len);
+
 #ifdef __cplusplus
 }
 #endif
